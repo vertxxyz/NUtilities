@@ -1,0 +1,30 @@
+/*DRAG AND DROP*/
+
+.dragAndDrop {
+	color: #686868;
+	background-color: rgba(0, 0, 0, 0.03);
+	font-size: 18px;
+	border-width: 1px;
+	border-color: rgb(0, 0, 0);
+	height: 40px;
+	margin-top: 5px;
+	margin-bottom: 10px;
+}
+
+.dragAndDropAccept {
+	background-color: rgba(0, 0, 0, 0.08);
+	border-width: 1px;
+	border-color: rgb(127, 255, 0);
+}
+
+.dragAndDropCenteredLabel {
+	border-width: 2px;
+	border-color: rgba(0, 0, 0, 0.05);
+
+	-unity-text-align: middle-center;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}

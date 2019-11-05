@@ -1,0 +1,7 @@
+.marginBorder {
+	margin: 6px 6px 6px 6px;
+}
+
+.innerPadding {
+	padding: 4px 6px 4px 6px;
+}
