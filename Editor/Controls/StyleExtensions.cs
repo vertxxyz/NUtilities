@@ -7,7 +7,7 @@ namespace Vertx.Extensions
 	{
 		public static StyleSheet GetStyleSheet(string name)
 		{
-			string[] findAssets = AssetDatabase.FindAssets($"t:StyleSheet {name}");
+			string[] findAssets = AssetDatabase.FindAssets($"t:{nameof(StyleSheet)} {name}");
 			if (findAssets.Length == 0)
 				return null;
 			var sheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(AssetDatabase.GUIDToAssetPath(findAssets[0]));
