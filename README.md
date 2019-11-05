@@ -12,6 +12,8 @@ Other important tools I have made may remain separate to this, like:
 
 ----
 ## Usage:
+Open utility windows under: **Window/Vertx/...**
+
 See the wiki for explanations of each utility.
 
 ## Installation
