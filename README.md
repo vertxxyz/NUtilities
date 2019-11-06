@@ -4,6 +4,9 @@ A collection of various tools and utilities for Unity.
 ## 🚨 WORK IN PROGRESS 🚨
 This is a platform for adding utilities to Unity as I see fit.
 
+• [Material Property Remapper](https://github.com/vertxxyz/NUtilities/wiki/MaterialPropertyRemapper)
+• [Code Generator](https://github.com/vertxxyz/NUtilities/wiki/CodeGenerator)
+
 [Utilities relating to timeline](https://github.com/vertxxyz/NTimeline) have their own package separate to this.
 
 Other important tools I have made may remain separate to this, like:
