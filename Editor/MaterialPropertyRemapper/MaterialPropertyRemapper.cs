@@ -46,7 +46,7 @@ namespace Vertx.Extensions
 
 		private void OnEnable()
 		{
-			rootVisualElement.styleSheets.Add(StyleExtensions.GetStyleSheet("MaterialPropertyRemapper"));
+			rootVisualElement.styleSheets.Add(StyleExtensions.GetStyleSheet("VertxShared"));
 			rootVisualElement.AddToClassList("marginBorder");
 
 			rootVisualElement.Add(new DragAndDropBox<Material>("Place Material Here", OnMaterialsDropped));

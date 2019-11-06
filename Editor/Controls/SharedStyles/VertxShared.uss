@@ -1,0 +1,37 @@
+.marginBorder {
+	margin: 6px 6px 6px 6px;
+}
+
+.paddingBorder {
+	padding: 6px 6px 6px 6px;
+}
+
+.marginAboveAndBelow {
+	margin: 6px 0px 6px 0px;
+}
+
+.innerPadding {
+	padding: 4px 6px 4px 6px;
+}
+
+.horizontalGroup {
+	flex-direction: row;
+}
+
+.grow {
+	flex-grow: 1;
+}
+
+Button.removeItem {
+	font-size: 9px;
+	margin-top: 0px;
+	margin-left: 5px;
+	height: 15px;
+	padding-top: 2px;
+	width: 60px;
+	align-self: center;
+}
+
+Button.removeItem:hover {
+	-unity-background-image-tint-color: rgb(255, 162, 158);
+}

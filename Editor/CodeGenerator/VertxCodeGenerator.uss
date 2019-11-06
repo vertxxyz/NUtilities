@@ -1,0 +1,97 @@
+.templateContentsField {
+	margin-top: 2px;
+	margin-bottom: 6px;
+	padding-top: 3px;
+	-unity-font: resource("consola");
+	font-size: 12px;
+	flex-direction: column;
+	align-items: flex-start;
+	align-self: flex-start;
+	flex-wrap: nowrap;
+	flex-grow: 1;
+}
+
+.mappingLabel {
+	width: 20px;
+	-unity-text-align: middle-center;
+}
+
+.remappingField {
+	flex-grow: 1;
+	flex-basis: 1;
+	margin-top: 1px;
+	margin-bottom: 1px;
+}
+
+/* --------------------- TEXT & HEADERS --------------------- */
+
+.inline-text {
+	padding: 0;
+	margin: 0;
+}
+
+.inline-text-group {
+	padding: 0;
+	margin: 0;
+	flex-direction : row;
+}
+
+.inline-text-group.result {
+	padding: 0;
+	margin: 0px 4px 0px 0px;
+	flex-direction : row;
+}
+
+/* --------------------- CODE --------------------- */
+
+.code-scroll {
+	/*flex-grow: 1;*/
+	background-color: #1E1E1E;
+	margin: 2px 0px 5px 0px;
+	padding: 0;
+	border-width: 1px;
+	border-top-left-radius: 6px;
+	border-top-right-radius: 6px;
+	border-color: #a66a54;
+	/*min-width: 200px;*/
+}
+
+.code-button {
+	background-image: none;
+	background-color: rgba(0,0,0,0);
+	padding: 0;
+	margin: 0;
+	position: absolute;
+	cursor: link;
+}
+
+.code-button-inline {
+	cursor: link;
+}
+
+.code-container {
+	margin-top: 2px;
+	margin-bottom: 6px;
+	padding-top: 3px;
+	-unity-font: resource("consola");
+	font-size: 12px;
+	flex-direction: column;
+	align-items: flex-start;
+	align-self: flex-start;
+	/*min-width: 200px;*/
+}
+
+.paragraph-container.code {
+	margin: 1px 5px 1px 10px;
+	flex-wrap: nowrap;
+	flex-direction : row;
+}
+
+.inline-text.code {
+	color: #DCDCDC;
+	-unity-font: resource("consola");
+}
+
+.highlitForRemap {
+	background-color: #2F4C6A;
+}
