@@ -250,7 +250,6 @@ namespace Vertx.Extensions
 				m_inheritedStyle.SetValue(l, value);
 				//it seems like whitespace is ignored in 2019.3+ so lets replace it
 				l.text = l.text.Replace("\t", "    ");
-				Debug.Log(l.text.Replace('>', 'x').Replace(' ', 'x'));
 				Vector2 measuredTextSize = l.MeasureTextSize(l.text.Replace('>', 'x').Replace(' ', 'x'), 0,
 					VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined);
 				l.style.width = measuredTextSize.x;

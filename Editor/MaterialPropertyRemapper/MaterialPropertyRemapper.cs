@@ -276,123 +276,127 @@ namespace Vertx.Extensions
 			}
 
 			EditorUtility.DisplayProgressBar("Remapping", "Remapping materials", 0);
-
-			string[] guids = AssetDatabase.FindAssets($"t:{nameof(Material)}");
-
 			StringBuilder log = new StringBuilder();
-
-			for (var index = 0; index < guids.Length; index++)
+			try
 			{
-				if (index % 5 == 0)
-				{
-					if (EditorUtility.DisplayCancelableProgressBar("Remapping", "Remapping materials", index / (float) (guids.Length - 1)))
-					{
-						EditorUtility.ClearProgressBar();
-						return;
-					}
-				}
+
+				string[] guids = AssetDatabase.FindAssets($"t:{nameof(Material)}");
 				
-				string guid = guids[index];
-				string path = AssetDatabase.GUIDToAssetPath(guid);
-				var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-				try
+				for (var index = 0; index < guids.Length; index++)
 				{
-
-					if (material.shader != shader) continue;
-					using (SerializedObject materialSO = new SerializedObject(material))
+					if (index % 5 == 0)
 					{
-						SerializedProperty savedProperties = materialSO.FindProperty("m_SavedProperties");
-						SerializedProperty source;
-						switch (remapType)
+						if (EditorUtility.DisplayCancelableProgressBar("Remapping", "Remapping materials", index / (float) (guids.Length - 1)))
 						{
-							case RemapType.Texture:
-								source = savedProperties.FindPropertyRelative("m_TexEnvs");
-								break;
-							case RemapType.Float:
-								source = savedProperties.FindPropertyRelative("m_Floats");
-								break;
-							case RemapType.VectorOrColor:
-								source = savedProperties.FindPropertyRelative("m_Colors");
-								break;
-							default:
-								throw new ArgumentOutOfRangeException(nameof(remapType), remapType, null);
+							EditorUtility.ClearProgressBar();
+							return;
 						}
+					}
 
-						//Collect the source and destination remappings
-						SerializedProperty from = null;
-						int fromIndex = -1;
-						int toIndex = -1;
-						for (int i = 0; i < source.arraySize; i++)
+					string guid = guids[index];
+					string path = AssetDatabase.GUIDToAssetPath(guid);
+					var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+					try
+					{
+
+						if (material.shader != shader) continue;
+						using (SerializedObject materialSO = new SerializedObject(material))
 						{
-							SerializedProperty value = source.GetArrayElementAtIndex(i);
-							SerializedProperty key = value.FindPropertyRelative("first");
-							if (key.stringValue == fromKey)
+							SerializedProperty savedProperties = materialSO.FindProperty("m_SavedProperties");
+							SerializedProperty source;
+							switch (remapType)
 							{
-								from = value;
-								fromIndex = i;
-								if (toIndex != -1)
+								case RemapType.Texture:
+									source = savedProperties.FindPropertyRelative("m_TexEnvs");
 									break;
+								case RemapType.Float:
+									source = savedProperties.FindPropertyRelative("m_Floats");
+									break;
+								case RemapType.VectorOrColor:
+									source = savedProperties.FindPropertyRelative("m_Colors");
+									break;
+								default:
+									throw new ArgumentOutOfRangeException(nameof(remapType), remapType, null);
+							}
+
+							//Collect the source and destination remappings
+							SerializedProperty from = null;
+							int fromIndex = -1;
+							int toIndex = -1;
+							for (int i = 0; i < source.arraySize; i++)
+							{
+								SerializedProperty value = source.GetArrayElementAtIndex(i);
+								SerializedProperty key = value.FindPropertyRelative("first");
+								if (key.stringValue == fromKey)
+								{
+									from = value;
+									fromIndex = i;
+									if (toIndex != -1)
+										break;
+									continue;
+								}
+
+								if (key.stringValue == toKey)
+								{
+									toIndex = i;
+									if (from != null)
+										break;
+								}
+							}
+
+							if (from == null)
+							{
+								log.AppendLine($"Failed to modify {materialSO.targetObject}. It did not contain the From property."); //<color=#aa4400ff>
 								continue;
 							}
 
-							if (key.stringValue == toKey)
-							{
-								toIndex = i;
-								if (from != null)
-									break;
-							}
-						}
-
-						if (from == null)
-						{
-							log.AppendLine($"Failed to modify {materialSO.targetObject}. It did not contain the From property.");//<color=#aa4400ff>
-							continue;
-						}
-
-						#if !OVERWRITE_SOURCE
+							#if !OVERWRITE_SOURCE
 						//TODO this has not been tested, it almost certainly needs to do a copy
 						source.InsertArrayElementAtIndex(fromIndex);
 						from = source.GetArrayElementAtIndex(fromIndex);
-						#endif
+							#endif
 
-						if (remapType == RemapType.Texture)
-						{
-							SerializedProperty texProp = from.FindPropertyRelative("second.m_Texture");
-							if (texProp != null)
+							if (remapType == RemapType.Texture)
 							{
-								if (texProp.objectReferenceValue == null)
+								SerializedProperty texProp = from.FindPropertyRelative("second.m_Texture");
+								if (texProp != null)
 								{
-									log.AppendLine($"{materialSO.targetObject} was skipped as it did not have a texture set in the From property.");//<color=#aa4400ff>
-									continue;
+									if (texProp.objectReferenceValue == null)
+									{
+										log.AppendLine($"{materialSO.targetObject} was skipped as it did not have a texture set in the From property."); //<color=#aa4400ff>
+										continue;
+									}
 								}
 							}
-						}
 
-						//Re-assign from's key to be the destination key.
-						from.FindPropertyRelative("first").stringValue = toKey;
-						
-						if (toIndex != -1)
-						{
-							//Delete pre-existing "to"
-							source.DeleteArrayElementAtIndex(toIndex);
+							//Re-assign from's key to be the destination key.
+							from.FindPropertyRelative("first").stringValue = toKey;
+
+							if (toIndex != -1)
+							{
+								//Delete pre-existing "to"
+								source.DeleteArrayElementAtIndex(toIndex);
 //							source.DeleteArrayElementAtIndex(toIndex);
+							}
+
+							materialSO.ApplyModifiedProperties();
+
+
+							log.AppendLine($"Modified {materialSO.targetObject} successfully."); //<color=#22aa22ff>
 						}
-
-						materialSO.ApplyModifiedProperties();
-
-
-						log.AppendLine($"Modified {materialSO.targetObject} successfully.");//<color=#22aa22ff>
+					}
+					catch (Exception e)
+					{
+						log.AppendLine($"\"{path}\" was skipped as an exception occurred."); //<color=#aa4400ff>
+						Debug.LogWarning("Exception was encountered, remap will continue.");
+						Debug.LogException(e);
 					}
 				}
-				catch (Exception e)
-				{
-					log.AppendLine($"\"{path}\" was skipped as an exception occurred.");//<color=#aa4400ff>
-					Debug.LogWarning("Exception was encountered, remap will continue.");
-					Debug.LogException(e);
-				}
 			}
-			
-			EditorUtility.ClearProgressBar();
+			finally
+			{
+				EditorUtility.ClearProgressBar();
+			}
 
 			Debug.LogWarning(log.ToString());
 		}
