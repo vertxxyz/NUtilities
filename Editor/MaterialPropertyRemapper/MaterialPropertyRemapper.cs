@@ -345,7 +345,7 @@ namespace Vertx.Extensions
 
 						if (from == null)
 						{
-							log.AppendLine($"<color=#aa4400ff>Failed to modify {materialSO.targetObject}. It did not contain the From property.</color>");
+							log.AppendLine($"Failed to modify {materialSO.targetObject}. It did not contain the From property.");//<color=#aa4400ff>
 							continue;
 						}
 
@@ -362,7 +362,7 @@ namespace Vertx.Extensions
 							{
 								if (texProp.objectReferenceValue == null)
 								{
-									log.AppendLine($"<color=#aa4400ff>{materialSO.targetObject} was skipped as it did not have a texture set in the From property.</color>");
+									log.AppendLine($"{materialSO.targetObject} was skipped as it did not have a texture set in the From property.");//<color=#aa4400ff>
 									continue;
 								}
 							}
@@ -375,18 +375,18 @@ namespace Vertx.Extensions
 						{
 							//Delete pre-existing "to"
 							source.DeleteArrayElementAtIndex(toIndex);
-							source.DeleteArrayElementAtIndex(toIndex);
+//							source.DeleteArrayElementAtIndex(toIndex);
 						}
 
 						materialSO.ApplyModifiedProperties();
 
 
-						log.AppendLine($"<color=#22aa22ff>Modified {materialSO.targetObject} successfully.</color>");
+						log.AppendLine($"Modified {materialSO.targetObject} successfully.");//<color=#22aa22ff>
 					}
 				}
 				catch (Exception e)
 				{
-					log.AppendLine($"<color=#aa4400ff>\"{path}\" was skipped as an exception occurred.</color>");
+					log.AppendLine($"\"{path}\" was skipped as an exception occurred.");//<color=#aa4400ff>
 					Debug.LogWarning("Exception was encountered, remap will continue.");
 					Debug.LogException(e);
 				}

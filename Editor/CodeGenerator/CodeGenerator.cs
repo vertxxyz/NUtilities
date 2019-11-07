@@ -29,7 +29,7 @@ namespace Vertx.Extensions
 		private const string addMappingButtonLabel = "Add Mapping";
 		private VisualElement templateContentsField;
 		private const string removeItemButtonLabel = "Remove";
-		
+
 		private const string remapFromName = "RemapFrom";
 		private const string remapToName = "RemapTo";
 
@@ -91,7 +91,7 @@ namespace Vertx.Extensions
 		}
 
 		void AddMappingUI() => AddMappingUI(null);
-		
+
 		void AddMappingUI(string fromDefault)
 		{
 			VisualElement horizontalGroup = new VisualElement();
@@ -117,7 +117,7 @@ namespace Vertx.Extensions
 			Button removeItemButton = new Button(() =>
 			{
 				horizontalGroup.RemoveFromHierarchy();
-				if(templateRemapGroup.childCount == 0)
+				if (templateRemapGroup.childCount == 0)
 					createFromTemplateButton.SetEnabled(false);
 			})
 			{
@@ -129,7 +129,7 @@ namespace Vertx.Extensions
 			horizontalGroup.Add(mappingLabel);
 			horizontalGroup.Add(mapToField);
 			horizontalGroup.Add(removeItemButton);
-			
+
 			createFromTemplateButton.SetEnabled(true);
 
 			if (fromDefault != null)
@@ -138,14 +138,16 @@ namespace Vertx.Extensions
 
 		void HighlightCode(ChangeEvent<string> evt)
 		{
-			if(!string.IsNullOrEmpty(evt.previousValue))
+			if (!string.IsNullOrEmpty(evt.previousValue))
 				RemoveHighlightFromCode(evt.previousValue);
 			string key = evt.newValue;
-			
+			if (string.IsNullOrEmpty(key))
+				return;
+
 			var q = templateContentsField.Query<Label>();
 			q.ForEach(label =>
 			{
-				if(Regex.IsMatch(label.text, $@"(?<!\w){key}(?!\w)"))
+				if (Regex.IsMatch(label.text, $@"(?<!\w){key}(?!\w)"))
 					label.EnableInClassList("highlitForRemap", true);
 			});
 		}
@@ -155,7 +157,7 @@ namespace Vertx.Extensions
 			var q = templateContentsField.Query<Label>();
 			q.ForEach(label =>
 			{
-				if(Regex.IsMatch(label.text, $@"(?<!\w){key}(?!\w)"))
+				if (Regex.IsMatch(label.text, $@"(?<!\w){key}(?!\w)"))
 					label.EnableInClassList("highlitForRemap", false);
 			});
 		}
@@ -181,7 +183,7 @@ namespace Vertx.Extensions
 			//Template path has been set.
 			templatePathField.value = templatePath;
 
-			AddCode(templateContentsField, File.ReadAllText(templatePath).Replace("\t", "    "));
+			AddCode(templateContentsField, File.ReadAllText(templatePath) /*.Replace("\t", "    ")*/);
 
 			templateDirectory = Path.GetDirectoryName(templatePath);
 			EditorPrefs.SetString(templateDirectoryKey, templateDirectory);
@@ -193,7 +195,7 @@ namespace Vertx.Extensions
 		void AddCode(VisualElement root, string content)
 		{
 			root.Clear();
-			
+
 			//Scroll
 			ScrollView codeScroll = new ScrollView(ScrollViewMode.Horizontal);
 			VisualElement contentContainer = codeScroll.contentContainer;
@@ -205,7 +207,7 @@ namespace Vertx.Extensions
 			contentContainer.ClearClassList();
 			contentContainer.AddToClassList("code-container");
 			VisualElement codeContainer = contentContainer;
-			
+
 			CSharpHighlighter highlighter = new CSharpHighlighter
 			{
 				AddStyleDefinition = false
@@ -221,10 +223,10 @@ namespace Vertx.Extensions
 				{
 					child.AddToClassList("code");
 					if (child.childCount == 1)
-						RichTextUtility.AddInlineText("", child);//This seems to be required to get layout to function properly.
+						RichTextUtility.AddInlineText("", child); //This seems to be required to get layout to function properly.
 				}
 			}
-			
+
 			//Begin Hack
 			FieldInfo m_inheritedStyle = typeof(VisualElement).GetField("inheritedStyle", BindingFlags.NonPublic | BindingFlags.Instance);
 			if (m_inheritedStyle == null)
@@ -237,23 +239,27 @@ namespace Vertx.Extensions
 			contentContainer.Query<Label>().ForEach(l =>
 			{
 				l.AddToClassList("code");
-				
+
 				//Hack to regenerate the font size as Rich Text tags are removed from the original calculation.
 				object value = m_inheritedStyle.GetValue(l);
-				StyleFont fontVar = (StyleFont)font.GetValue(value);
+				StyleFont fontVar = (StyleFont) font.GetValue(value);
 				fontVar.value = consola;
 				font.SetValue(value, fontVar);
-				StyleLength fontSizeVar = 12;// = (StyleLength) fontSize.GetValue(value); //This doesn't seem to work properly, hard coded for now.
+				StyleLength fontSizeVar = 12; // = (StyleLength) fontSize.GetValue(value); //This doesn't seem to work properly, hard coded for now.
 				fontSize.SetValue(value, fontSizeVar);
 				m_inheritedStyle.SetValue(l, value);
-				Vector2 measuredTextSize = l.MeasureTextSize(l.text.Replace('>', ' '), 0, VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined);
+				//it seems like whitespace is ignored in 2019.3+ so lets replace it
+				l.text = l.text.Replace("\t", "    ");
+				Debug.Log(l.text.Replace('>', 'x').Replace(' ', 'x'));
+				Vector2 measuredTextSize = l.MeasureTextSize(l.text.Replace('>', 'x').Replace(' ', 'x'), 0,
+					VisualElement.MeasureMode.Undefined, 0, VisualElement.MeasureMode.Undefined);
 				l.style.width = measuredTextSize.x;
 				l.style.height = measuredTextSize.y;
 				l.AddToClassList("code-button-inline");
-				
+
 				l.RegisterCallback<MouseUpEvent>(evt => { AddMappingUI(l.text); });
 			});
-			
+
 			//Button
 			/*Button codeCopyButtonButtonContainer = new Button(() =>
 			{
@@ -286,7 +292,7 @@ namespace Vertx.Extensions
 			string path = EditorUtility.SaveFilePanel("Save Remapped Template", Application.dataPath, Path.GetFileNameWithoutExtension(templatePath), "cs");
 			if (string.IsNullOrEmpty(path))
 				return;
-			
+
 			File.WriteAllText(path, content);
 			AssetDatabase.Refresh();
 		}

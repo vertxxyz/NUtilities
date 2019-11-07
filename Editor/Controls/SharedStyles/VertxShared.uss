@@ -15,6 +15,7 @@
 }
 
 .horizontalGroup {
+	justify-content:  space-between;
 	flex-direction: row;
 }
 
@@ -34,4 +35,5 @@ Button.removeItem {
 
 Button.removeItem:hover {
 	-unity-background-image-tint-color: rgb(255, 162, 158);
+	background-color: rgb(255, 162, 158);
 }
