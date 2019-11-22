@@ -1,11 +1,7 @@
 {
-    "name": "nUtilities",
-    "references": [
-        "GUID:f772fb7c88cd92143961aba947414b87"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "name": "nUtilities.Runtime",
+    "references": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

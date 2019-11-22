@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -274,26 +275,18 @@ namespace Vertx.Extensions
 		void CreateFromTemplate()
 		{
 			string templatePath = templatePathField.value;
-			if (!File.Exists(templatePath))
-			{
-				Debug.LogError($"File no longer exists at {templatePath}");
-				return;
-			}
-
-			string content = File.ReadAllText(templatePath);
+			Dictionary<string, string> mapping = new Dictionary<string, string>();
 			foreach (var child in templateRemapGroup.Children())
 			{
 				var from = child.Q<TextField>(remapFromName);
 				var to = child.Q<TextField>(remapToName);
-				content = content.Replace(from.value, to.value);
+				mapping.Add(from.value, to.value);
 			}
 
-			string path = EditorUtility.SaveFilePanel("Save Remapped Template", Application.dataPath, Path.GetFileNameWithoutExtension(templatePath), "cs");
-			if (string.IsNullOrEmpty(path))
+			if (!CodeUtility.GetAndReplaceTextAtFilePath(templatePath, mapping, out string content))
 				return;
-
-			File.WriteAllText(path, content);
-			AssetDatabase.Refresh();
+				
+			CodeUtility.SaveAndWriteFileDialog(Path.GetFileNameWithoutExtension(templatePath), content);
 		}
 	}
 }
