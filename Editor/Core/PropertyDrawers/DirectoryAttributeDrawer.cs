@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.IO;
+using Vertx.Extensions;
 
-namespace Vertx
+namespace Vertx.Editor
 {
 	[CustomPropertyDrawer(typeof(DirectoryAttribute))]
 	public class DirectoryAttributeDrawer : PropertyDrawer

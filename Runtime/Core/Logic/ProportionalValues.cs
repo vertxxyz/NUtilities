@@ -2,6 +2,9 @@
 
 namespace Vertx
 {
+	/// <summary>
+	/// Proportional data associated with proportional sliders can be calculated using an instance of this class.
+	/// </summary>
 	public class ProportionalValues
 	{
 		private float[] values;
@@ -32,7 +35,8 @@ namespace Vertx
 		public float GetValue(int index)
 		{
 			if (index < 0 || index >= values.Length)
-				throw new IndexOutOfRangeException();
+				throw new IndexOutOfRangeException($"Index {index} does not exist in the {nameof(ProportionalValues)} current state. " +
+				                                   "You should create a new instance if the array size has changed.");
 			return values[index];
 		}
 
@@ -52,7 +56,6 @@ namespace Vertx
 					if (i == index) continue;
 					values[i] = 0;
 				}
-
 				return;
 			}
 
@@ -77,18 +80,12 @@ namespace Vertx
 
 				return;
 			}
-
-			//If we have values to be distributed positively
-			//ie. values need to move UP
-			//[------o---------]
-			//[---o------------]
-			//[o---------------]
-			//[---o------------]
-			//Distribute with the remaining bound of the remaining values.
+			
+			//Distribute the remaining amount proportionally across the other values
 			for (int i = 0; i < values.Length; i++)
 			{
 				if (i == index) continue;
-				values[i] = (values[i] / otherValuesTotal) * toBeDistributed;
+				values[i] = values[i] / otherValuesTotal * toBeDistributed;
 			}
 		}
 	}

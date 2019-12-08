@@ -5,9 +5,10 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Vertx.Extensions;
 using static Vertx.RichTextParser;
 
-namespace Vertx
+namespace Vertx.Extensions
 {
 	public static class RichTextUtility
 	{

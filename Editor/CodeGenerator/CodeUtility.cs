@@ -2,9 +2,8 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
-namespace Vertx
+namespace Vertx.Extensions
 {
 	public static class CodeUtility
 	{

@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 
-public class FileAttribute : PropertyAttribute
-{
-	public readonly bool FileIsLocalToProject;
+namespace Vertx {
+	public class FileAttribute : PropertyAttribute
+	{
+		public readonly bool FileIsLocalToProject;
 
-	public FileAttribute(bool fileIsLocalToProject) => FileIsLocalToProject = fileIsLocalToProject;
+		public FileAttribute(bool fileIsLocalToProject) => FileIsLocalToProject = fileIsLocalToProject;
+	}
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Vertx {
+namespace Vertx.Extensions {
     public interface IButtonRegistry
     {
         bool RegisterButton(string key, Action action);
