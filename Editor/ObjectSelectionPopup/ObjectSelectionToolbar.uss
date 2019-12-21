@@ -1,0 +1,36 @@
+.menu-button {
+    width: 60px;
+    display: flex;
+    visibility: visible;
+    overflow: hidden;
+    align-items: flex-start;
+    -unity-text-align: upper-center;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+    background-color: rgba(255, 255, 255, 0.39);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 6px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 6px;
+    height: 16px;
+    margin-left: 1px;
+    margin-right: 1px;
+}
+
+.zoom-slider {
+    width: 50px;
+    margin-right: 6px;
+    margin-left: 6px;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+.packages-button {
+    border-bottom-left-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.39);
+    padding-left: 5px;
+    padding-right: 4px;
+    margin-left: 2px;
+    margin-right: 0;
+}

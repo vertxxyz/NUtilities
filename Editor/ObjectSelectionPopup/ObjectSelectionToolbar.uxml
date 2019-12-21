@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="Toolbar" style="height: 16px; flex-direction: row;">
+        <Style path="Packages/com.vertx.nutilities/Editor/ObjectSelectionPopup/ObjectSelectionToolbar.uss" />
+        <ui:Button text="Scene" tooltip="View Scene Objects in the Object Search" name="SceneButton" class="menu-button" />
+        <ui:Button text="Assets" tooltip="View Assets in the Object Search" name="AssetsButton" class="menu-button" />
+        <ui:VisualElement name="Spacer" class="spacer" />
+        <ui:Slider picking-mode="Ignore" value="1" high-value="100" name="ZoomSlider" class="zoom-slider" />
+        <ui:Button text="Packages" tooltip="Hide Packages" name="PackagesButton" class="packages-button" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿#if !EXCLUDE_SCRIPTABLEOBJECTINSPECTOR
+
+using UnityEditor;
 using UnityEngine;
 using Vertx.Extensions;
 
@@ -63,3 +65,5 @@ namespace Vertx.Editor
 		public override void OnInspectorGUI() => DrawDefaultInspector();
 	}
 }
+
+#endif
