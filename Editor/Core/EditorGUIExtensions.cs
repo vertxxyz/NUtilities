@@ -122,5 +122,183 @@ namespace Vertx.Extensions {
 		}
 
 		#endregion
+		
+		#region Header
+		public static bool DrawHeader(GUIContent label, SerializedProperty activeField = null, float widthCutoff = 0, bool noBoldOrIndent = false)
+		{
+			bool ret;
+			if (activeField != null)
+			{
+				activeField.serializedObject.Update();
+				bool v = activeField.boolValue;
+				ret = DrawHeader(label, ref v, false, widthCutoff, noBoldOrIndent);
+				activeField.boolValue = v;
+				activeField.serializedObject.ApplyModifiedProperties();
+			}
+			else
+			{
+				bool v = true; //Can't wait for c# 7
+				ret = DrawHeader(label, ref v, true, widthCutoff, noBoldOrIndent);
+			}
+			return ret;
+		}
+	
+		public static bool DrawHeader(GUIContent label, ref bool active, bool hideToggle = false, float widthCutoff = 0, bool noBoldOrIndent = false)
+		{
+			Rect r = GUILayoutUtility.GetRect(1, 17);
+			return DrawHeader(r, label, ref active, hideToggle, widthCutoff, noBoldOrIndent);
+		}
+		
+		public static bool DrawHeader(Rect contentRect, GUIContent label, ref bool active, bool hideToggle = false, float widthCutoff = 0, bool noBoldOrIndent = false)
+		{
+			Rect labelRect = contentRect;
+			if(!noBoldOrIndent)
+				labelRect.xMin += 16f;
+			labelRect.xMax -= 20f;
+			Rect toggleRect = contentRect;
+			if (!noBoldOrIndent)
+				toggleRect.xMin = EditorGUI.indentLevel * 15;
+			toggleRect.y += 2f;
+			toggleRect.width = 13f;
+			toggleRect.height = 13f;
+			contentRect.xMin = 0.0f;
+			EditorGUI.DrawRect(contentRect, HeaderColor);
+			using (new EditorGUI.DisabledScope(!active))
+				EditorGUI.LabelField(labelRect, label, noBoldOrIndent ? EditorStyles.label : EditorStyles.boldLabel);
+			if (!hideToggle)
+			{
+				active = GUI.Toggle(toggleRect, active, GUIContent.none, SmallTickbox);
+				labelRect.xMin = toggleRect.xMax;
+			}
+			else
+				labelRect.xMin = 0;
+			Event current = Event.current;
+			if (current.type != EventType.MouseDown)
+				return false;
+			labelRect.width -= widthCutoff;
+			if (!labelRect.Contains(current.mousePosition))
+				return false;
+			if (current.button != 0)
+				return false;
+			current.Use();
+			return true;
+		}
+
+		public static bool DrawHeaderWithFoldout(GUIContent label, bool expanded, float widthCutoff = 0, bool opensOnDragUpdated = false)
+		{
+			bool v = true;
+			bool ret = DrawHeader(label, ref v, true, widthCutoff);
+			if (Foldout(GUILayoutUtility.GetLastRect(), expanded, opensOnDragUpdated))
+				return true;
+			return ret;
+		}
+
+		private static bool Foldout(Rect r, bool expanded, bool noBoldOrIndent = false)
+		{
+			switch (Event.current.type) {
+				case EventType.DragUpdated:
+					if (!expanded) {
+						if (r.Contains(Event.current.mousePosition)) {
+							Event.current.Use();
+							return true;
+						}
+					}
+					break;
+				case EventType.Repaint:
+					//Only draw the Foldout - don't use it as a button or get focus
+					r.x += 3;
+					if (!noBoldOrIndent)
+						r.x += EditorGUI.indentLevel * 15;
+					else
+						r.xMin -= 16;
+					r.y += 1f;
+					EditorStyles.foldout.Draw(r, GUIContent.none, -1, expanded);
+					break;
+			}
+			return false;
+		}
+		
+		public static bool DrawHeaderWithFoldout(Rect rect, GUIContent label, bool expanded,
+			float widthCutoff = 0, bool noBoldOrIndent = false)
+		{
+			bool v = true; //Can't wait for c# 7
+			bool ret = DrawHeader(rect, label, ref v, true, widthCutoff, noBoldOrIndent);
+			if (Foldout(rect, expanded, noBoldOrIndent))
+				return true;
+			return ret;
+		}
+
+		public static void DrawSplitter(bool inverse = false)
+		{
+			Rect rect = GUILayoutUtility.GetRect(1f, 1f);
+			rect.xMin = 0.0f;
+			if (Event.current.type != EventType.Repaint)
+				return;
+			Color c = inverse ? InverseSplitterColor : SplitterColor;
+			c.a = GUI.color.a;
+			EditorGUI.DrawRect(rect, c);
+		}
+		
+		public static Color SplitterColorPro =  new Color(0.12f, 0.12f, 0.12f, 1.333f);
+		public static Color SplitterColorNonPro = new Color(0.6f, 0.6f, 0.6f, 1.333f);
+		public static Color SplitterColor => EditorGUIUtility.isProSkin ? SplitterColorPro : SplitterColorNonPro;
+		public static Color InverseSplitterColor => !EditorGUIUtility.isProSkin ? SplitterColorPro : SplitterColorNonPro;
+		public static Color HeaderColor => !EditorGUIUtility.isProSkin ? new Color(1, 1, 1, 0.2f) : new Color(0.1f, 0.1f, 0.1f, 0.2f);
+		
+		private static GUIStyle _smallTickbox;
+		public static GUIStyle SmallTickbox => _smallTickbox ?? (_smallTickbox = new GUIStyle("ShurikenCheckMark"));
+		#endregion
+
+		#region Outline
+
+		public class OutlineScope : IDisposable
+		{
+			private readonly EditorGUILayout.VerticalScope scope;
+
+			public OutlineScope(bool drawBackground = true)
+			{
+				GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
+				scope = new EditorGUILayout.VerticalScope(EditorStyles.inspectorDefaultMargins);
+				Rect rect = scope.rect;
+				if (drawBackground)
+				{
+					if (Event.current.type == EventType.Repaint)
+					{
+						Color orgColor = GUI.color;
+						GUI.color = BackgroundColor;
+						GUI.DrawTexture(rect, EditorGUIUtility.whiteTexture);
+						GUI.color = orgColor;
+					}
+				}
+
+				DrawOutline(new Rect(rect.x, rect.y - 1, rect.width, rect.height + 1), 1);
+			}
+
+			public void Dispose()
+			{
+				GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
+				scope.Dispose();
+			}
+		}
+
+		public static void DrawOutline(Rect rect, float size)
+		{
+			if (Event.current.type != EventType.Repaint)
+				return;
+
+			Color orgColor = GUI.color;
+			GUI.color *= OutlineColor;
+			GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, size), EditorGUIUtility.whiteTexture);
+			GUI.DrawTexture(new Rect(rect.x, rect.yMax - size, rect.width, size), EditorGUIUtility.whiteTexture);
+			GUI.DrawTexture(new Rect(rect.x, rect.y + 1, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
+			GUI.DrawTexture(new Rect(rect.xMax - size, rect.y + 1, size, rect.height - 2 * size), EditorGUIUtility.whiteTexture);
+
+			GUI.color = orgColor;
+		}
+
+		private static Color OutlineColor => EditorGUIUtility.isProSkin ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
+		private static Color BackgroundColor => EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f) : new Color(0.9f, 0.9f, 0.9f);
+
+		#endregion
 	}
 }

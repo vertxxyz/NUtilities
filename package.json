@@ -7,5 +7,6 @@
   "keywords": [ "Editor" ],
   "category": "Tools",
   "dependencies": {
+    "com.unity.test-framework": "1.1.8"
   }
 }
