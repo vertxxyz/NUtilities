@@ -126,11 +126,13 @@ namespace Vertx.Editor {
 			{
 				multiLine = true;
 				SerializedProperty end = property.GetEndProperty();
-				while (property.NextVisible(true) && !SerializedProperty.EqualContents(property, end))
+				bool enterChildren = true;
+				while (property.NextVisible(enterChildren) && !SerializedProperty.EqualContents(property, end))
 				{
 					float height = EditorGUI.GetPropertyHeight(property, false);
 					heights.Add(height);
 					totalPropertyHeight += height + EditorGUIUtility.standardVerticalSpacing;
+					enterChildren = false;
 				}
 			}
 			else
@@ -194,7 +196,8 @@ namespace Vertx.Editor {
 					contentRect.y = labelRect.yMax + EditorGUIUtility.standardVerticalSpacing;
 					SerializedProperty end = value.GetEndProperty();
 					int index = 0;
-					while (value.NextVisible(true) && !SerializedProperty.EqualContents(value, end))
+					bool enterChildren = true;
+					while (value.NextVisible(enterChildren) && !SerializedProperty.EqualContents(value, end))
 					{
 						float height = propertyHeights[index++];
 						contentRect.height = height;
@@ -202,10 +205,11 @@ namespace Vertx.Editor {
 						{
 							float labelRectX = labelRect.x + 15;
 							GUI.Label(new Rect(labelRectX, contentRect.y, contentRect.x - labelRectX - 2, contentRect.height), value.displayName);
-							EditorGUI.PropertyField(contentRect, value, GUIContent.none);
+							EditorGUI.PropertyField(contentRect, value, GUIContent.none, false);
 						}
 
 						contentRect.y += height + EditorGUIUtility.standardVerticalSpacing;
+						enterChildren = false;
 					}
 				}
 				else

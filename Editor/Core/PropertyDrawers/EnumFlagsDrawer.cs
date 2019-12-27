@@ -13,6 +13,13 @@ namespace Vertx.Editor {
 		{
 			var flagsAttribute = (EnumFlagsAttribute) attribute;
 			Type enumType = fieldInfo.FieldType;
+			if (!enumType.IsEnum)
+			{
+				if (enumType.IsGenericType)
+					enumType = enumType.GetGenericArguments().Single();
+				if (enumType.IsArray)
+					enumType = enumType.GetElementType();
+			}
 
 			EditorGUI.BeginProperty(position, label, property);
 			if (flagsAttribute.RedZero && property.intValue == 0)

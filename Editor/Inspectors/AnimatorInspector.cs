@@ -160,11 +160,11 @@ namespace Vertx.Editor
 			private static readonly Color kBoneInvalid = new Color(1f, 0.3f, 0.25f, 1f);
 			private static readonly Color kBoneInactive = Color.gray;
 			private static readonly Color kBoneSelected = new Color(0.4f, 0.7f, 1f, 1f);
-
-
+			
 			/// <summary>
-			/// Returns whether hover has occurred
+			/// Draws the GUI for a single bone dot.
 			/// </summary>
+			/// <returns>Returns true if this is being hovered</returns>
 			public bool BoneDotGUI(Rect rect, Rect selectRect, Rect tooltipRect, int boneIndex, bool hasHover = false)
 			{
 				bool hover = false;

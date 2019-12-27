@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 
 namespace Vertx.Extensions {
 	public static class EditorUtils {
@@ -95,10 +96,10 @@ namespace Vertx.Extensions {
 				string path = pathIterator; 
 				if (path.EndsWith("]"))
 				{
-					int startIndex = path.IndexOf('[');
+					int startIndex = path.IndexOf('[') + 1;
 					int length = path.Length - startIndex - 1;
 					index = int.Parse(path.Substring(startIndex, length));
-					path = path.Substring(0, startIndex);
+					path = path.Substring(0, startIndex - 1);
 				}
 					
 				FieldInfo fieldInfo = type.GetField(path, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -112,22 +113,50 @@ namespace Vertx.Extensions {
 					} while (fieldInfo == null && type != typeof(object));
 				}
 
-				//TODO use the index that should be at substring 0-n, to index into this array and continue searching through the paths.
+				if (fieldInfo == null)
+					throw new FieldAccessException($"{type}.{prop.propertyPath} does not have a matching FieldInfo. This is likely because it is a native property.");
+
 				type = fieldInfo.FieldType;
 				parent = @object;
 				@object = fieldInfo.GetValue(@object);
-				
+
 				if (type.IsArray)
-				{
-					type = type.GetElementType();
-					parent = @object;
-					@object = ((Array) @object).GetValue(index);
+				{					
+					if (index >= 0)
+					{
+						parent = @object;
+						@object = ((Array) @object).GetValue(index);
+					}
+					else if (prop.propertyPath.EndsWith("Array.size"))
+					{
+						if (@object == null)
+							return 0;
+						parent = @object;
+						@object = ((Array) @object).Length;
+						return @object;
+					}
+					else
+						return @object;
+					type = @object?.GetType();
 				}
 				else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
 				{
-					type = type.GetGenericArguments()[0];
-					parent = @object;
-					@object = ((IList) @object)[index];
+					if (index >= 0)
+					{
+						parent = @object;
+						@object = ((IList) @object)[index];
+					}
+					else if (prop.propertyPath.EndsWith("Array.size"))
+					{
+						if (@object == null)
+							return 0;
+						parent = @object;
+						@object = ((IList) @object).Count;
+						return @object;
+					}
+					else
+						return @object;
+					type = @object?.GetType();
 				}
 			}
 
