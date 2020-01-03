@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using UnityEngine;
 using NUnit.Framework;
 using UnityEditor;
@@ -118,7 +117,7 @@ namespace Vertx.Testing.Editor
 				if (property.propertyPath.EndsWith("m_Script")) continue;
 				try
 				{
-					object objectFromProperty = EditorUtils.GetObjectFromProperty(property, out _);
+					object objectFromProperty = EditorUtils.GetObjectFromProperty(property, out _, out _);
 
 					switch (property.propertyType)
 					{

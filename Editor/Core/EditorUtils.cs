@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEngine;
 
 namespace Vertx.Extensions {
 	public static class EditorUtils {
@@ -78,8 +77,9 @@ namespace Vertx.Extensions {
 		/// </summary>
 		/// <param name="prop">The property query</param>
 		/// <param name="parent">The parent of the returned object</param>
+		/// <param name="fieldInfo">The fieldInfo associated with the property</param>
 		/// <returns>The object associated with the SerializedProperty <para>prop</para></returns>
-		public static object GetObjectFromProperty(SerializedProperty prop, out object parent)
+		public static object GetObjectFromProperty(SerializedProperty prop, out object parent, out FieldInfo fieldInfo)
 		{
 			// Separate the steps it takes to get to this property
 			string p = Regex.Replace(prop.propertyPath, @".Array.data", string.Empty);
@@ -88,6 +88,7 @@ namespace Vertx.Extensions {
 			// Go down to the root of this serialized property
 			object @object = prop.serializedObject.targetObject;
 			parent = null;
+			fieldInfo = null;
 			Type type = prop.serializedObject.targetObject.GetType();
 			// Walk down the path to get the target type
 			foreach (var pathIterator in separatedPaths)
@@ -102,7 +103,7 @@ namespace Vertx.Extensions {
 					path = path.Substring(0, startIndex - 1);
 				}
 					
-				FieldInfo fieldInfo = type.GetField(path, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+				fieldInfo = type.GetField(path, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 				//Walk up the type tree to find the field in question
 				if (fieldInfo == null)
 				{

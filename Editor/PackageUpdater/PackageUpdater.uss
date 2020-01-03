@@ -1,0 +1,62 @@
+.packageItem {
+	flex-direction: row;
+	height: 27px;
+	background-color: rgba(255, 255, 255, 0.2);
+	padding: 5px;
+	border-bottom-width: 1px;
+	border-color: rgba(0, 0, 0, 0.25);
+	margin-bottom: 2px;
+}
+
+.ignores {
+	flex-direction: row;
+	height: 20px;
+	background-color: rgba(255, 110, 100, 0.4);
+	padding: 5px 2px 5px 10px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-right-width: 1px;
+	border-color: rgba(0, 0, 0, 0.25);
+	margin: -2px 25px 2px;
+}
+
+.packageTitle {
+	-unity-text-align: middle-left;
+}
+
+.ignoreTitle {
+	-unity-text-align: middle-left;
+	font-size: 11px;
+}
+
+.spacer {
+	flex-grow: 1;
+}
+
+.packagesRoot {
+	margin-top: 6px;
+}
+
+.addRoot {
+	margin-top: 6px;
+	flex-grow: 1;
+}
+
+.grow1 {
+	flex-grow: 1;
+}
+
+.listView {
+	height: 200px;
+	margin-top: -2px;
+	border-width: 1px;
+	border-color: rgba(0, 0, 0, 0.5);
+	border-radius: 2px 2px 3px 3px;
+}
+
+.addPackageItemButton {
+	height: 16px;
+	margin-left: 6px;
+	margin-right: 6px;
+	-unity-text-align: middle-left;
+}

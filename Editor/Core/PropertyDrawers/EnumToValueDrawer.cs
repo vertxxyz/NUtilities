@@ -60,7 +60,7 @@ namespace Vertx.Editor {
 
 				//Collect former values
 				var dictionaryOldValues = new Dictionary<int, object>();
-				object parent = EditorUtils.GetObjectFromProperty(property, out _);
+				object parent = EditorUtils.GetObjectFromProperty(property, out _, out _);
 				Array valuesArray = (Array) valuesField.GetValue(parent);
 				for (int i = 0; i < keys.arraySize; i++)
 				{
