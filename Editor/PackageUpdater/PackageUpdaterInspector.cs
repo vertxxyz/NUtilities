@@ -47,7 +47,6 @@ namespace Vertx.Editor
 
 		public override VisualElement CreateInspectorGUI()
 		{
-			PackageUpdater packageUpdater = (PackageUpdater) target;
 			(StyleSheet styleSheet, VisualTreeAsset uxml) = StyleExtensions.GetStyleSheetAndUXML("PackageUpdater");
 			packageItemUXML = StyleExtensions.GetUXML("PackageItem");
 

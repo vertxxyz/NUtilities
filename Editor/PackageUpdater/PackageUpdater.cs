@@ -66,17 +66,6 @@ namespace Vertx.Editor
 			nameProp = "Name",
 			ignoreProp = "IgnoreVersion";
 
-		public bool IsVersionIgnored(string packageName, string version)
-		{
-			foreach (TrackedPackage updatingPackage in updatingPackages)
-			{
-				if (!updatingPackage.Name.Equals(packageName)) continue;
-				return updatingPackage.IsVersionIgnored(version);
-			}
-
-			return false;
-		}
-
 		public List<PackageInfo> CollectUnTrackedPackages(PackageCollection packageCollection)
 		{
 			//Collect the names of all the packages we're currently tracking and updating.
@@ -145,7 +134,7 @@ namespace Vertx.Editor
 
 				if (string.IsNullOrEmpty(updateTo))
 				{
-					VerboseLog($"{packageName} ({currentVersion}) has no latest version. It may be a package from git, this is not currently supported.");
+					VerboseLog($"{packageName} {currentVersion} has no latest version. It may be a package from git, this is not currently supported.");
 					continue;
 				}
 
@@ -161,6 +150,14 @@ namespace Vertx.Editor
 					continue;
 				}
 
+				SemVersion currentSemVer = SemVersion.Parse(currentVersion);
+				SemVersion updateToSemVer = SemVersion.Parse(updateTo);
+				if (currentSemVer > updateToSemVer)
+				{
+					VerboseLog($"{packageName} {currentVersion} is up to date.");
+					continue;
+				}
+
 				int selection = EditorUtility.DisplayDialogComplex(
 					"Package Updater", $"{packageInfo.displayName}\n({packageName}) can be updated.\n{currentVersion} to:\n{updateTo}",
 					$"Update to {updateTo}",
@@ -170,8 +167,8 @@ namespace Vertx.Editor
 				{
 					case 0:
 						// Update
-						//TODO UPDATE OF SINGLE PACKAGE
-						VerboseLog($"Updating to {packageName} {updateTo}.");
+						VerboseLog($"Updating {packageInfo.displayName} to {packageName} {updateTo} from {currentVersion}.");
+						Client.Add($"{packageName}@{updateTo}");
 						break;
 					case 1:
 						// Ignore Once
