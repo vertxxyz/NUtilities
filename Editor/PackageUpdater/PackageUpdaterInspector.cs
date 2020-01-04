@@ -14,6 +14,13 @@ using static Vertx.Editor.PackageUpdater;
 
 namespace Vertx.Editor
 {
+	/*
+	 * At some point it may come to pass that this:
+	 * https://forum.unity.com/threads/add-an-option-to-auto-update-packages.730628/#post-4931882
+	 * Should be integrated additionally.
+	 * By the looks of it now, I'll keep it separate.
+	 */
+	
 	[CustomEditor(typeof(PackageUpdater))]
 	public class PackageUpdaterInspector : UnityEditor.Editor
 	{
@@ -122,62 +129,17 @@ namespace Vertx.Editor
 
 			updateButton = root.Q<Button>("Update Button");
 			updateButton.SetEnabled(false);
-
-			void UpdateButtonFunctionality()
-			{
-				List<PackageInfo> trackedPackages = CollectTrackedPackages();
-				foreach (PackageInfo trackedPackage in trackedPackages)
-				{
-					string newVersion = trackedPackage.versions.latestCompatible;
-					string packageName = trackedPackage.name;
-					string packageVersion = trackedPackage.version;
-
-					if (string.IsNullOrEmpty(newVersion))
-					{
-						Debug.LogWarning($"{packageName} ({packageVersion}) has no latest version. It may be a package from git, this is not currently supported.");
-						continue;
-					}
-
-					if (packageVersion.Equals(newVersion))
-					{
-						Debug.Log($"{packageName} is up to date. ({packageVersion}).");
-						continue;
-					}
-
-					if (packageUpdater.IsVersionIgnored(packageName, newVersion))
-					{
-						Debug.Log($"{packageName} ({newVersion}) is currently being ignored by the package updater.\nCurrent version: {packageVersion}.");
-						continue;
-					}
-
-					int selection = EditorUtility.DisplayDialogComplex("Package Updater", $"{trackedPackage.displayName} ({packageName}) can be updated.\n{packageVersion} to {newVersion}", $"Update to {newVersion}", "Ignore Once", "Skip Version");
-					switch (selection)
-					{
-						case 0:
-							// Update
-							//TODO update package
-							break;
-						case 1:
-							// Ignore Once
-							Debug.Log($"{packageName} ({packageVersion}) has been ignored once.");
-							break;
-						case 2:
-							// Skip Version
-							packageUpdater.SetToSkipPackageVersion(packageName, newVersion);
-							serializedObject.SetIsDifferentCacheDirty();
-							serializedObject.Update();
-							int index = packageUpdater.GetIndexOf(packageName);
-							SetIgnores(updatingPackages.GetArrayElementAtIndex(index), packageRoot[index]);
-							break;
-						default:
-							throw new NotImplementedException($"Return status: {selection}, from DisplayDialogComplex not supported.");
-					}
-				}
-			}
-
-			updateButton.clickable.clicked += UpdateButtonFunctionality;
+			updateButton.clickable.clicked += DoUpdate;
 
 			return root;
+		}
+
+		void DoUpdate()
+		{
+			((PackageUpdater) target).UpdateTrackedPackages(packageCollection);
+			serializedObject.Update();
+			for (int i = 0; i < updatingPackages.arraySize; i++)
+				SetIgnores(updatingPackages.GetArrayElementAtIndex(i), packageRoot[i]);
 		}
 
 		void AddTrackedPackage(int index, string nameOverride = null)
@@ -234,34 +196,18 @@ namespace Vertx.Editor
 
 		private PackageCollection packageCollection;
 
-		private List<PackageInfo> CollectUnTrackedPackages()
+		private void ValidatePackages()
 		{
-			//Collect the names of all the packages we're currently tracking and updating.
-			HashSet<string> currentlyUpdatingNames = new HashSet<string>();
 			for (int i = 0; i < updatingPackages.arraySize; i++)
 			{
 				SerializedProperty arrayElementAtIndex = updatingPackages.GetArrayElementAtIndex(i);
 				SerializedProperty name = arrayElementAtIndex.FindPropertyRelative(nameProp);
-				currentlyUpdatingNames.Add(name.stringValue);
+				if (packageCollection.Any(pI => pI.name.Equals(name.stringValue)))
+					continue;
+				packageRoot[i].Add(new HelpBox($"{name.stringValue} is no longer present in the project. Remove this value from the Updater.", HelpBox.MessageType.Error));
 			}
-
-			return packageCollection.Where(package => !currentlyUpdatingNames.Contains(package.name)).ToList();
 		}
-
-		private List<PackageInfo> CollectTrackedPackages()
-		{
-			//Collect the names of all the packages we're currently tracking and updating.
-			HashSet<string> currentlyUpdatingNames = new HashSet<string>();
-			for (int i = 0; i < updatingPackages.arraySize; i++)
-			{
-				SerializedProperty arrayElementAtIndex = updatingPackages.GetArrayElementAtIndex(i);
-				SerializedProperty name = arrayElementAtIndex.FindPropertyRelative(nameProp);
-				currentlyUpdatingNames.Add(name.stringValue);
-			}
-
-			return packageCollection.Where(package => currentlyUpdatingNames.Contains(package.name)).ToList();
-		}
-
+		
 		#region AddButton Helpers
 
 		private void PopulateAdd()
@@ -274,7 +220,7 @@ namespace Vertx.Editor
 				return;
 			}
 
-			List<PackageInfo> packages = CollectUnTrackedPackages();
+			List<PackageInfo> packages = ((PackageUpdater)target).CollectUnTrackedPackages(packageCollection);
 
 			if (packages.Count > 0)
 			{
@@ -288,7 +234,7 @@ namespace Vertx.Editor
 
 		private void ValidateAddButton()
 		{
-			if (CollectUnTrackedPackages().Count > 0)
+			if (((PackageUpdater)target).CollectUnTrackedPackages(packageCollection).Count > 0)
 				EnableAddButton();
 			else
 				DisableAddButton();
@@ -321,13 +267,15 @@ namespace Vertx.Editor
 					case StatusCode.Success:
 						packageCollection = request.Result;
 						//Exit early in case of NRE (happens when recompiling with this open)
-						if (addButton != null)
-							ValidateAddButton();
+						if (addButton == null)
+							return;
+						ValidateAddButton();
+						ValidatePackages();
 						break;
 					case StatusCode.InProgress:
 						break;
 					case StatusCode.Failure:
-						Debug.Log(request.Error.message);
+						Debug.LogError(request.Error.message);
 						break;
 					default:
 						throw new NotImplementedException($"Request status: {request.Status}, not supported.");
@@ -348,7 +296,7 @@ namespace Vertx.Editor
 			object updatingPackagesList = EditorUtils.GetObjectFromProperty(updatingPackages, out _, out FieldInfo fieldInfo);
 			if (updatingPackagesList != null)
 			{
-				var packageInfos = new List<PackageUpdater.PackageInfo>((PackageUpdater.PackageInfo[]) updatingPackagesList);
+				var packageInfos = new List<PackageUpdater.TrackedPackage>((PackageUpdater.TrackedPackage[]) updatingPackagesList);
 				packageInfos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 				fieldInfo.SetValue(packageUpdater, packageInfos.ToArray());
 				EditorUtility.SetDirty(packageUpdater);
