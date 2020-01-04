@@ -3,7 +3,10 @@
 		<ui:VisualElement name="Packages Root" class="packagesRoot"/>
 		<ui:VisualElement name="Add Root" class="addRoot">
 			<ui:Button name="Add Button" text="Loading" enabled="false"/>
-			<ui:ListView name="Add Contents" class="grow1 listView" item-height="18"/>
+			<ui:VisualElement name="Add Container" class="addContainer">
+				<uie:ToolbarSearchField name="Search"/>
+				<ui:ListView name="Add Contents" class="grow1 listView" item-height="18"/>
+			</ui:VisualElement>
 		</ui:VisualElement>
 		<ui:Button name="Update Button" text="Check for Updates Manually" class="largeButton" enabled="false"/>
 	</ui:VisualElement>

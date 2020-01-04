@@ -5,6 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Vertx.Controls;
@@ -29,9 +30,11 @@ namespace Vertx.Editor
 		private SerializedProperty updatingPackages;
 
 		private VisualTreeAsset packageItemUXML;
-		private VisualElement root, packageRoot, addRoot;
+		private VisualElement root, packageRoot, addRoot, addContainer;
 		private Button addButton, updateButton;
+		private ToolbarSearchField search;
 		private ListView listView;
+		private const string hiddenStyle = "hidden";
 
 
 		private void OnEnable()
@@ -57,6 +60,9 @@ namespace Vertx.Editor
 
 			packageRoot = root.Q("Packages Root");
 			addRoot = root.Q("Add Root");
+			addContainer = addRoot.Q("Add Container");
+			search = addContainer.Q<ToolbarSearchField>("Search");
+			search.RegisterCallback<ChangeEvent<string>>(Search);
 
 			if (updatingPackages.arraySize == 0)
 				AddHelpBox();
@@ -86,16 +92,17 @@ namespace Vertx.Editor
 			#if UNITY_2020_1_OR_NEWER
 			listView.onItemsChosen += objects =>
 			{
-				int c = listView.itemsSource.Count;
+				int c = untrackedPackages.Count;
 				foreach (var o in objects)
 				{
 					//Add package so it can be tracked by the Package Updater.
 					PackageInfo packageInfo = (PackageInfo) o;
 					int index = updatingPackages.arraySize++;
+					updatingPackages.GetArrayElementAtIndex(index).FindPropertyRelative(ignoreProp).stringValue = null;
 					AddTrackedPackage(index, packageInfo.name);
 					serializedObject.ApplyModifiedProperties();
 					listView.Clear();
-					listView.RemoveFromHierarchy();
+					addContainer.AddToClassList(hiddenStyle);
 					c--;
 				}
 
@@ -120,10 +127,10 @@ namespace Vertx.Editor
 				AddTrackedPackage(index, packageInfo.name);
 				serializedObject.ApplyModifiedProperties();
 				listView.Clear();
-				listView.RemoveFromHierarchy();
+				addContainer.AddToClassList(hiddenStyle);
 			};
 			#endif
-			listView.RemoveFromHierarchy();
+			addContainer.AddToClassList(hiddenStyle);
 			//-----------------------------------------------------
 
 			updateButton = root.Q<Button>("Update Button");
@@ -176,24 +183,36 @@ namespace Vertx.Editor
 			VisualElement ignoresRoot = itemRoot.Q("Ignores");
 			if (string.IsNullOrEmpty(ignore.stringValue))
 			{
-				ignoresRoot.style.display = DisplayStyle.None;
+				ignoresRoot.AddToClassList(hiddenStyle);
 			}
 			else
 			{
 				var labelIgnore = itemRoot.Q<Label>(null, "ignoreTitle");
 				labelIgnore.text = $"Ignoring {ignore.stringValue}";
 				var buttonIgnore = itemRoot.Q<Button>("Remove Ignore");
-				ignoresRoot.style.display = DisplayStyle.Flex;
+				ignoresRoot.RemoveFromClassList(hiddenStyle);
 				buttonIgnore.clickable = new Clickable(() =>
 				{
 					ignore.stringValue = null;
 					serializedObject.ApplyModifiedProperties();
-					ignoresRoot.style.display = DisplayStyle.None;
+					ignoresRoot.AddToClassList(hiddenStyle);
 				});
 			}
 		}
 
 		private PackageCollection packageCollection;
+		private List<PackageInfo> untrackedPackages;
+
+		private void Search(ChangeEvent<string> evt)
+		{
+			string newValue = evt.newValue;
+			if (string.IsNullOrEmpty(newValue))
+			{
+				listView.itemsSource = untrackedPackages;
+				return;
+			}
+			listView.itemsSource = untrackedPackages.Where(p => p.name.Contains(newValue)).ToList();
+		}
 
 		private void ValidatePackages()
 		{
@@ -214,18 +233,20 @@ namespace Vertx.Editor
 			if (listView.contentContainer.childCount > 0)
 			{
 				listView.Clear();
-				listView.RemoveFromHierarchy();
+				addContainer.AddToClassList(hiddenStyle);
 				addButton.text = "Add";
 				return;
 			}
 
-			List<PackageInfo> packages = ((PackageUpdater)target).CollectUnTrackedPackages(packageCollection);
+			untrackedPackages = ((PackageUpdater)target).CollectUnTrackedPackages(packageCollection);
 
-			if (packages.Count > 0)
+			if (untrackedPackages.Count > 0)
 			{
-				addRoot.Add(listView);
-				listView.itemsSource = packages;
+				addContainer.RemoveFromClassList(hiddenStyle);
+				listView.itemsSource = untrackedPackages;
 				addButton.text = "Cancel";
+				//If anyone can figure out how to make this work properly, I'd love to know. SelectAll doesn't seem to work either.
+				search.Q<TextField>().Focus();
 			}
 			else
 				DisableAddButton();

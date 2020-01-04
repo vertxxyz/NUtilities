@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using Vertx.Extensions;
 using Debug = UnityEngine.Debug;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
@@ -86,7 +87,7 @@ namespace Vertx.Editor
 
 		private ListRequest request;
 
-		public void UpdateAllPackages()
+		public void UpdateTrackedPackages()
 		{
 			VerboseLog("Updating Packages ---");
 
@@ -176,6 +177,7 @@ namespace Vertx.Editor
 						break;
 					case 2:
 						// Skip Version
+						VerboseLog($"{packageName} {updateTo} has been skipped.");
 						TrackedPackage ignorePackage = trackedPackage;
 						ignorePackage.IgnoreVersion = updateTo;
 						updatingPackages[index] = ignorePackage;
@@ -185,6 +187,43 @@ namespace Vertx.Editor
 						throw new NotImplementedException($"Return status: {selection}, from DisplayDialogComplex not supported.");
 				}
 			}
+		}
+
+		#endregion
+
+		#region Lifetime
+		
+		private const double pollRate = 1800;
+		private static double waitToTime;
+		
+		[InitializeOnLoadMethod]
+		static void Initialise()
+		{
+			if (EditorApplication.timeSinceStartup < 60)
+				//If this is the first time we're starting, update on the minute.
+				waitToTime = 60;
+			else
+				IncrementWait();
+
+			EditorApplication.update += Update;
+		}
+		
+		/// <summary>
+		/// Sets the next check to the next occurrence of a multiple of poll rate
+		/// </summary>
+		private static void IncrementWait () => waitToTime = EditorApplication.timeSinceStartup - EditorApplication.timeSinceStartup % pollRate + pollRate;
+
+		static void Update()
+		{
+			double updateTime = EditorApplication.timeSinceStartup;
+			if (waitToTime > updateTime)
+				return;
+			
+			IncrementWait();
+
+			PackageUpdater[] packageUpdaters = EditorUtils.LoadAssetsOfType<PackageUpdater>();
+			foreach (PackageUpdater packageUpdater in packageUpdaters)
+				packageUpdater.UpdateTrackedPackages();
 		}
 
 		#endregion

@@ -10,6 +10,21 @@ using UnityEditor;
 namespace Vertx.Extensions {
 	public static class EditorUtils {
 
+		#region Assets
+
+		public static T[] LoadAssetsOfType<T>() where T : UnityEngine.Object
+		{
+			string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).FullName}");
+			if (guids.Length == 0)
+				return null;
+			T[] values = new T[guids.Length];
+			for (int i = 0; i < guids.Length; i++)
+				values[i] = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
+			return values;
+		}
+
+		#endregion
+		
 		#region Folders
 		public static void ShowFolderContents(int folderInstanceId, bool revealAndFrameInFolderTree)
 		{
