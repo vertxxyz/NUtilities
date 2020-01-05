@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -184,7 +184,7 @@ namespace Vertx.Extensions
 			//Template path has been set.
 			templatePathField.value = templatePath;
 
-			AddCode(templateContentsField, File.ReadAllText(templatePath) /*.Replace("\t", "    ")*/);
+			AddCode(templateContentsField, File.ReadAllText(templatePath) /*.Replace("\t", "    ")#1#);
 
 			templateDirectory = Path.GetDirectoryName(templatePath);
 			EditorPrefs.SetString(templateDirectoryKey, templateDirectory);
@@ -269,7 +269,7 @@ namespace Vertx.Extensions
 			codeCopyButtonButtonContainer.ClearClassList();
 			codeCopyButtonButtonContainer.AddToClassList("code-button");
 			codeCopyButtonButtonContainer.StretchToParentSize();
-			codeContainer.Add(codeCopyButtonButtonContainer);*/
+			codeContainer.Add(codeCopyButtonButtonContainer);#1#
 		}
 
 		void CreateFromTemplate()
@@ -289,4 +289,4 @@ namespace Vertx.Extensions
 			CodeUtility.SaveAndWriteFileDialog(Path.GetFileNameWithoutExtension(templatePath), content);
 		}
 	}
-}
+}*/

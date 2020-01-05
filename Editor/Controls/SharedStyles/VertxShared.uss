@@ -2,6 +2,10 @@
 	margin: 6px 6px 6px 6px;
 }
 
+.marginEdges {
+	margin: 0 6px 0 6px;
+}
+
 .paddingBorder {
 	padding: 6px 6px 6px 6px;
 }
@@ -28,7 +32,7 @@ Button.removeItem {
 	margin-top: 0px;
 	margin-left: 5px;
 	height: 15px;
-	padding-top: 2px;
+	padding-top: 4px;
 	width: 60px;
 	align-self: center;
 }
@@ -36,4 +40,12 @@ Button.removeItem {
 Button.removeItem:hover {
 	-unity-background-image-tint-color: rgb(255, 162, 158);
 	background-color: rgb(255, 162, 158);
+}
+
+Button.largeButton {
+	margin-top: 12px;
+	height: 24px;
+	font-size: 12px;
+	padding-top: 5px;
+	-unity-text-align: middle-center;
 }
