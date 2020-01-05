@@ -1,11 +1,11 @@
 {
   "name": "com.vertx.nutilities",
-  "displayName":  "nUtilities",
-  "version": "1.0.2",
+  "displayName": "nUtilities",
+  "version": "1.0.3",
   "unity": "2018.3",
   "description": "A collection of various tools and utilities for Unity.",
-  "keywords": [ "Editor" ],
-  "category": "Tools",
-  "dependencies": {
-  }
+  "keywords": [
+    "Editor"
+  ],
+  "category": "Tools"
 }
