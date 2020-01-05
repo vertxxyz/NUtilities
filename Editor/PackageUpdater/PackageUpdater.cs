@@ -1,4 +1,4 @@
-﻿#define VERBOSE_DEBUGGING
+﻿// #define VERBOSE_DEBUGGING
 
 using System;
 using System.Collections.Generic;
@@ -168,7 +168,7 @@ namespace Vertx.Editor
 				{
 					case 0:
 						// Update
-						VerboseLog($"Updating {packageInfo.displayName} to {packageName} {updateTo} from {currentVersion}.");
+						Debug.Log($"Updating {packageInfo.displayName} to {packageName} {updateTo} from {currentVersion}. This may take a moment and will be delayed as the request occurs.");
 						Client.Add($"{packageName}@{updateTo}");
 						break;
 					case 1:
@@ -194,29 +194,28 @@ namespace Vertx.Editor
 		#region Lifetime
 		
 		private const double pollRate = 1800;
-		private static double waitToTime;
+		private static double timeOfNextUpdate;
 		
 		[InitializeOnLoadMethod]
 		static void Initialise()
 		{
 			if (EditorApplication.timeSinceStartup < 60)
 				//If this is the first time we're starting, update on the minute.
-				waitToTime = 60;
+				timeOfNextUpdate = 60;
 			else
 				IncrementWait();
 
-			EditorApplication.update += Update;
+			EditorApplication.update += OnUpdate;
 		}
 		
 		/// <summary>
 		/// Sets the next check to the next occurrence of a multiple of poll rate
 		/// </summary>
-		private static void IncrementWait () => waitToTime = EditorApplication.timeSinceStartup - EditorApplication.timeSinceStartup % pollRate + pollRate;
+		private static void IncrementWait () => timeOfNextUpdate = EditorApplication.timeSinceStartup - EditorApplication.timeSinceStartup % pollRate + pollRate;
 
-		static void Update()
+		static void OnUpdate()
 		{
-			double updateTime = EditorApplication.timeSinceStartup;
-			if (waitToTime > updateTime)
+			if (timeOfNextUpdate > EditorApplication.timeSinceStartup)
 				return;
 			
 			IncrementWait();

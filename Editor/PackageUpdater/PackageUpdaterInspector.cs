@@ -316,7 +316,7 @@ namespace Vertx.Editor
 			object updatingPackagesList = EditorUtils.GetObjectFromProperty(updatingPackages, out _, out FieldInfo fieldInfo);
 			if (updatingPackagesList != null)
 			{
-				var packageInfos = new List<PackageUpdater.TrackedPackage>((PackageUpdater.TrackedPackage[]) updatingPackagesList);
+				var packageInfos = new List<TrackedPackage>((TrackedPackage[]) updatingPackagesList);
 				packageInfos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 				fieldInfo.SetValue(packageUpdater, packageInfos.ToArray());
 				EditorUtility.SetDirty(packageUpdater);
