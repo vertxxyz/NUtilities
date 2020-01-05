@@ -221,6 +221,7 @@ namespace Vertx.Editor
 			IncrementWait();
 
 			PackageUpdater[] packageUpdaters = EditorUtils.LoadAssetsOfType<PackageUpdater>();
+			if(packageUpdaters == null) return;
 			foreach (PackageUpdater packageUpdater in packageUpdaters)
 				packageUpdater.UpdateTrackedPackages();
 		}
