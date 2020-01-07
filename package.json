@@ -1,11 +1,14 @@
 {
   "name": "com.vertx.nutilities",
   "displayName": "nUtilities",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "unity": "2018.3",
   "description": "A collection of various tools and utilities for Unity.",
   "keywords": [
     "Editor"
   ],
-  "category": "Tools"
+  "category": "Tools",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "1.1.0"
+  }
 }

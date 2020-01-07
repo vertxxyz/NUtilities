@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 using UnityEditor;
-using UnityEditor.PackageManager;
-using UnityEditor.PackageManager.Requests;
 using UnityEditor.UIElements;
-using UnityEngine;
 using UnityEngine.UIElements;
 using Vertx.Controls;
 using Vertx.Extensions;
-using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using static Vertx.Editor.PackageUpdater;
 
 namespace Vertx.Editor
@@ -21,12 +19,10 @@ namespace Vertx.Editor
 	 * Should be integrated additionally.
 	 * By the looks of it now, I'll keep it separate.
 	 */
-	
+
 	[CustomEditor(typeof(PackageUpdater))]
 	public class PackageUpdaterInspector : UnityEditor.Editor
 	{
-		ListRequest request;
-
 		private SerializedProperty updatingPackages;
 
 		private VisualTreeAsset packageItemUXML;
@@ -36,13 +32,14 @@ namespace Vertx.Editor
 		private ListView listView;
 		private const string hiddenStyle = "hidden";
 
-
+		private string[] packagesInProject;
+		private List<string> untrackedPackages;
+		
 		private void OnEnable()
 		{
 			updatingPackages = serializedObject.FindProperty(updatingPackagesProp);
 
-			request = Client.List(); // List packages installed for the Project
-			EditorApplication.update += Progress;
+			packagesInProject = GetPackagesInProject();
 		}
 
 		void AddHelpBox() => packageRoot.Add(new HelpBox("There are currently no packages auto-updating", HelpBox.MessageType.Info));
@@ -86,8 +83,8 @@ namespace Vertx.Editor
 			};
 			listView.bindItem = (element, i) =>
 			{
-				PackageInfo packageInfo = (PackageInfo) listView.itemsSource[i];
-				((Label) element).text = packageInfo.name;
+				string packageName = (string) listView.itemsSource[i];
+				((Label) element).text = packageName;
 			};
 			#if UNITY_2020_1_OR_NEWER
 			listView.onItemsChosen += objects =>
@@ -96,10 +93,10 @@ namespace Vertx.Editor
 				foreach (var o in objects)
 				{
 					//Add package so it can be tracked by the Package Updater.
-					PackageInfo packageInfo = (PackageInfo) o;
+					string packageName = (string) o;
 					int index = updatingPackages.arraySize++;
 					updatingPackages.GetArrayElementAtIndex(index).FindPropertyRelative(ignoreProp).stringValue = null;
-					AddTrackedPackage(index, packageInfo.name);
+					AddTrackedPackage(index, packageName);
 					serializedObject.ApplyModifiedProperties();
 					listView.Clear();
 					addContainer.AddToClassList(hiddenStyle);
@@ -122,9 +119,9 @@ namespace Vertx.Editor
 					EnableAddButton();
 
 				//Add package so it can be tracked by the Package Updater.
-				PackageInfo packageInfo = (PackageInfo) o;
+				string packageName = (string) o;
 				int index = updatingPackages.arraySize++;
-				AddTrackedPackage(index, packageInfo.name);
+				AddTrackedPackage(index, packageName);
 				serializedObject.ApplyModifiedProperties();
 				listView.Clear();
 				addContainer.AddToClassList(hiddenStyle);
@@ -136,13 +133,27 @@ namespace Vertx.Editor
 			updateButton = root.Q<Button>("Update Button");
 			updateButton.SetEnabled(false);
 			updateButton.clickable.clicked += DoUpdate;
+			
+			ValidateAddButton();
+			ValidatePackages();
 
 			return root;
 		}
 
+		static string[] GetPackagesInProject() =>
+			AssetDatabase.FindAssets("t:PackageManifest", new[] {"Packages"})
+				.Select(AssetDatabase.GUIDToAssetPath)
+				.Select(path =>
+				{
+					JObject json = JObject.Parse(File.ReadAllText(path));
+					string name = (string) json["name"];
+					//string version = (string) json["version"];
+					return name;
+				}).ToArray();
+
 		void DoUpdate()
 		{
-			((PackageUpdater) target).UpdateTrackedPackages(packageCollection);
+			((PackageUpdater) target).UpdateTrackedPackages();
 			serializedObject.Update();
 			for (int i = 0; i < updatingPackages.arraySize; i++)
 				SetIgnores(updatingPackages.GetArrayElementAtIndex(i), packageRoot[i]);
@@ -191,17 +202,16 @@ namespace Vertx.Editor
 				labelIgnore.text = $"Ignoring {ignore.stringValue}";
 				var buttonIgnore = itemRoot.Q<Button>("Remove Ignore");
 				ignoresRoot.RemoveFromClassList(hiddenStyle);
+				buttonIgnore.RemoveManipulator(buttonIgnore.clickable);
 				buttonIgnore.clickable = new Clickable(() =>
 				{
 					ignore.stringValue = null;
 					serializedObject.ApplyModifiedProperties();
 					ignoresRoot.AddToClassList(hiddenStyle);
 				});
+				buttonIgnore.AddManipulator(buttonIgnore.clickable);
 			}
 		}
-
-		private PackageCollection packageCollection;
-		private List<PackageInfo> untrackedPackages;
 
 		private void Search(ChangeEvent<string> evt)
 		{
@@ -211,7 +221,8 @@ namespace Vertx.Editor
 				listView.itemsSource = untrackedPackages;
 				return;
 			}
-			listView.itemsSource = untrackedPackages.Where(p => p.name.Contains(newValue)).ToList();
+
+			listView.itemsSource = untrackedPackages.Where(packageName => packageName.Contains(newValue)).ToList();
 		}
 
 		private void ValidatePackages()
@@ -220,12 +231,12 @@ namespace Vertx.Editor
 			{
 				SerializedProperty arrayElementAtIndex = updatingPackages.GetArrayElementAtIndex(i);
 				SerializedProperty name = arrayElementAtIndex.FindPropertyRelative(nameProp);
-				if (packageCollection.Any(pI => pI.name.Equals(name.stringValue)))
+				if (packagesInProject.Any(packageName => packageName.Equals(name.stringValue)))
 					continue;
 				packageRoot[i].Add(new HelpBox($"{name.stringValue} is no longer present in the project. Remove this value from the Updater.", HelpBox.MessageType.Error));
 			}
 		}
-		
+
 		#region AddButton Helpers
 
 		private void PopulateAdd()
@@ -238,7 +249,7 @@ namespace Vertx.Editor
 				return;
 			}
 
-			untrackedPackages = ((PackageUpdater)target).CollectUnTrackedPackages(packageCollection);
+			untrackedPackages = ((PackageUpdater) target).CollectUnTrackedPackages(packagesInProject);
 
 			if (untrackedPackages.Count > 0)
 			{
@@ -254,7 +265,7 @@ namespace Vertx.Editor
 
 		private void ValidateAddButton()
 		{
-			if (((PackageUpdater)target).CollectUnTrackedPackages(packageCollection).Count > 0)
+			if (((PackageUpdater) target).CollectUnTrackedPackages(packagesInProject).Count > 0)
 				EnableAddButton();
 			else
 				DisableAddButton();
@@ -276,41 +287,8 @@ namespace Vertx.Editor
 
 		#endregion
 
-		void Progress()
-		{
-			if (!request.IsCompleted)
-				return;
-			try
-			{
-				switch (request.Status)
-				{
-					case StatusCode.Success:
-						packageCollection = request.Result;
-						//Exit early in case of NRE (happens when recompiling with this open)
-						if (addButton == null)
-							return;
-						ValidateAddButton();
-						ValidatePackages();
-						break;
-					case StatusCode.InProgress:
-						break;
-					case StatusCode.Failure:
-						Debug.LogError(request.Error.message);
-						break;
-					default:
-						throw new NotImplementedException($"Request status: {request.Status}, not supported.");
-				}
-			}
-			finally
-			{
-				EditorApplication.update -= Progress;
-			}
-		}
-
 		private void OnDisable()
 		{
-			EditorApplication.update -= Progress;
-
 			//Sort the package list.
 			var packageUpdater = (PackageUpdater) target;
 			object updatingPackagesList = EditorUtils.GetObjectFromProperty(updatingPackages, out _, out FieldInfo fieldInfo);
