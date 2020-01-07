@@ -40,7 +40,7 @@ namespace Vertx.Editor
 						newVersion =
 							#if UNITY_2020_1_OR_NEWER
 							packageInfo.versions.verified;
-						#else
+							#else
 							packageInfo.versions.recommended;
 						#endif
 						if (string.IsNullOrEmpty(newVersion))
@@ -77,10 +77,18 @@ namespace Vertx.Editor
 			return packageCollection.Where(package => !currentlyUpdatingNames.Contains(package.name)).ToList();
 		}
 
+		public List<string> CollectUnTrackedPackages(IEnumerable<string> packageNames)
+		{
+			//Collect the names of all the packages we're currently tracking and updating.
+			HashSet<string> currentlyUpdatingNames = new HashSet<string>();
+			foreach (TrackedPackage updatingPackage in updatingPackages)
+				currentlyUpdatingNames.Add(updatingPackage.Name);
+
+			return packageNames.Where(package => !currentlyUpdatingNames.Contains(package)).ToList();
+		}
+
 		public IEnumerable<(TrackedPackage, PackageInfo, int index)> CollectTrackedPackages(PackageCollection packageCollection) =>
-			updatingPackages.Select(
-				(updatingPackage, index) =>
-					(updatingPackage, packageCollection.FirstOrDefault(a => a.name.Equals(updatingPackage.Name)), index));
+			updatingPackages.Select((updatingPackage, index) => (updatingPackage, packageCollection.FirstOrDefault(a => a.name.Equals(updatingPackage.Name)), index));
 
 
 		#region Update
@@ -124,8 +132,83 @@ namespace Vertx.Editor
 			}
 		}
 
+
 		public void UpdateTrackedPackages(PackageCollection packageCollection)
 		{
+			bool UpdateGitPackage(TrackedPackage trackedPackage, PackageInfo packageInfo, int index)
+			{
+				if (packageInfo.source != PackageSource.Git)
+					return false;
+
+				string id = packageInfo.packageId;
+				string path = packageInfo.resolvedPath;
+				//Resolved data
+				string url = id.Substring(id.IndexOf('@') + 1);
+				string currentHash = path.Substring(path.IndexOf('@') + 1);
+
+				string[] urlAndBranch = url.Split('#');
+				
+				string branch;
+				if (urlAndBranch.Length == 1)
+					branch = "master";
+				else
+				{
+					url = urlAndBranch[0];
+					branch = urlAndBranch[1];
+				}
+
+				GitUtils.ExecuteGitCommand($"ls-remote {url} {branch} | cut -f1", (success, message) =>
+					{
+						if (!success)
+							return;
+						string latestHash = message.Substring(0, message.IndexOf('\t'));
+						string packageName = packageInfo.name;
+						if (currentHash.Equals(latestHash))
+						{
+							VerboseLog($"{packageName} {packageInfo.version} is up to date.");
+							return;
+						}
+						
+						if (trackedPackage.IsVersionIgnored(latestHash))
+						{
+							VerboseLog($"Ignored {packageName} {latestHash}");
+							return;
+						}
+
+						int selection = EditorUtility.DisplayDialogComplex(
+							"Package Updater", $"{packageInfo.displayName}\n({packageName}) can be updated.\n{currentHash} to:\n{latestHash}",
+							"Update",
+							"Ignore Once",
+							"Skip Version");
+						switch (selection)
+						{
+							case 0:
+								// Update
+								Debug.Log(
+									$"Updating {packageInfo.displayName} to {packageName} {latestHash} from {currentHash}. This may take a moment and will be delayed as the request occurs.");
+								Client.Add(url);
+								break;
+							case 1:
+								// Ignore Once
+								VerboseLog($"{packageName} {currentHash} has been ignored once.");
+								break;
+							case 2:
+								// Skip Version
+								VerboseLog($"{packageName} {currentHash} has been skipped.");
+								TrackedPackage ignorePackage = trackedPackage;
+								ignorePackage.IgnoreVersion = currentHash;
+								updatingPackages[index] = ignorePackage;
+								EditorUtility.SetDirty(this);
+								break;
+							default:
+								throw new NotImplementedException($"Return status: {selection}, from DisplayDialogComplex not supported.");
+						}
+					},
+					true);
+
+				return true;
+			}
+
 			IEnumerable<(TrackedPackage, PackageInfo, int index)> trackedPackages = CollectTrackedPackages(packageCollection);
 			foreach ((TrackedPackage trackedPackage, PackageInfo packageInfo, int index) in trackedPackages)
 			{
@@ -135,6 +218,20 @@ namespace Vertx.Editor
 
 				if (string.IsNullOrEmpty(updateTo))
 				{
+					if (packageInfo.source == PackageSource.Local)
+					{
+						VerboseLog($"{packageName} {currentVersion} has no latest version. It is a local package.");
+						continue;
+					}
+
+					if (UpdateGitPackage(trackedPackage, packageInfo, index))
+					{
+						VerboseLog(
+							$"Querying {packageInfo.displayName} - {packageName} via git. This may take a moment as the request occurs.");
+						// ReSharper disable once RedundantJumpStatement
+						continue;
+					}
+
 					VerboseLog($"{packageName} {currentVersion} has no latest version. It may be a package from git, this is not currently supported.");
 					continue;
 				}
@@ -168,7 +265,8 @@ namespace Vertx.Editor
 				{
 					case 0:
 						// Update
-						Debug.Log($"Updating {packageInfo.displayName} to {packageName} {updateTo} from {currentVersion}. This may take a moment and will be delayed as the request occurs.");
+						Debug.Log(
+							$"Updating {packageInfo.displayName} to {packageName} {updateTo} from {currentVersion}. This may take a moment and will be delayed as the request occurs.");
 						Client.Add($"{packageName}@{updateTo}");
 						break;
 					case 1:
@@ -192,10 +290,10 @@ namespace Vertx.Editor
 		#endregion
 
 		#region Lifetime
-		
+
 		private const double pollRate = 1800;
 		private static double timeOfNextUpdate;
-		
+
 		[InitializeOnLoadMethod]
 		static void Initialise()
 		{
@@ -207,21 +305,21 @@ namespace Vertx.Editor
 
 			EditorApplication.update += OnUpdate;
 		}
-		
+
 		/// <summary>
 		/// Sets the next check to the next occurrence of a multiple of poll rate
 		/// </summary>
-		private static void IncrementWait () => timeOfNextUpdate = EditorApplication.timeSinceStartup - EditorApplication.timeSinceStartup % pollRate + pollRate;
+		private static void IncrementWait() => timeOfNextUpdate = EditorApplication.timeSinceStartup - EditorApplication.timeSinceStartup % pollRate + pollRate;
 
 		static void OnUpdate()
 		{
 			if (timeOfNextUpdate > EditorApplication.timeSinceStartup)
 				return;
-			
+
 			IncrementWait();
 
 			PackageUpdater[] packageUpdaters = EditorUtils.LoadAssetsOfType<PackageUpdater>();
-			if(packageUpdaters == null) return;
+			if (packageUpdaters == null) return;
 			foreach (PackageUpdater packageUpdater in packageUpdaters)
 				packageUpdater.UpdateTrackedPackages();
 		}

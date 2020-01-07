@@ -1,6 +1,5 @@
 ﻿using UnityEditor;
 using UnityEngine;
-using Vertx;
 
 namespace Vertx.Editor
 {
