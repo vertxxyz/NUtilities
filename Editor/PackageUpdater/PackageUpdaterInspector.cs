@@ -116,7 +116,7 @@ namespace Vertx.Editor
 			listView.onItemChosen += o =>
 			{
 				//Disable the add button if there will be no more packages.
-				if (listView.itemsSource.Count <= 1)
+				if (untrackedPackages.Count <= 1)
 					DisableAddButton();
 				else
 					EnableAddButton();
