@@ -313,6 +313,9 @@ namespace Vertx.Editor
 
 		static void OnUpdate()
 		{
+			if (EditorApplication.isPlayingOrWillChangePlaymode)
+				return;
+			
 			if (timeOfNextUpdate > EditorApplication.timeSinceStartup)
 				return;
 
