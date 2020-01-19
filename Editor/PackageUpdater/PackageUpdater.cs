@@ -212,6 +212,12 @@ namespace Vertx.Editor
 			IEnumerable<(TrackedPackage, PackageInfo, int index)> trackedPackages = CollectTrackedPackages(packageCollection);
 			foreach ((TrackedPackage trackedPackage, PackageInfo packageInfo, int index) in trackedPackages)
 			{
+				if (packageInfo == null)
+				{
+					Debug.LogError($"{trackedPackage.Name} is no longer present in the project, please remove it from {this}");
+					continue;
+				}
+
 				string packageName = trackedPackage.Name;
 				string currentVersion = packageInfo.version;
 				string updateTo = trackedPackage.GetVersionToUpgradeTo(packageInfo);
