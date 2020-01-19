@@ -157,7 +157,7 @@ namespace Vertx.Editor
 					branch = urlAndBranch[1];
 				}
 
-				GitUtils.ExecuteGitCommand($"ls-remote {url} {branch} | cut -f1", (success, message) =>
+				GitUtils.ExecuteGitCommand($"ls-remote {url} {branch}", (success, message) =>
 					{
 						if (!success)
 							return;
@@ -313,6 +313,9 @@ namespace Vertx.Editor
 
 		static void OnUpdate()
 		{
+			if (EditorApplication.isPlayingOrWillChangePlaymode)
+				return;
+			
 			if (timeOfNextUpdate > EditorApplication.timeSinceStartup)
 				return;
 

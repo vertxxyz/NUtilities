@@ -14,6 +14,7 @@ namespace Vertx.Editor {
 
 		private string[] enumNames;
 		private float[] propertyHeights;
+		private GUIContent[] tooltips;
 		private float totalPropertyHeight;
 		private bool multiLine;
 		private bool dictionary;
@@ -118,6 +119,11 @@ namespace Vertx.Editor {
 				values.arraySize = enumNames.Length;
 			}
 
+			tooltips = new GUIContent[valuesToNames.Count];
+			int j = 0;
+			foreach (KeyValuePair<int,string> valuesToName in valuesToNames)
+				tooltips[j++] = new GUIContent(string.Empty, valuesToName.Key.ToString());
+
 			List<float> heights = new List<float>();
 			totalPropertyHeight = 0;
 
@@ -192,7 +198,7 @@ namespace Vertx.Editor {
 						EditorGUI.Popup(labelRect, i, enumNames);
 						GUI.enabled = true;
 					}
-
+					EditorGUI.LabelField(labelRect, tooltips[i]);
 					contentRect.y = labelRect.yMax + EditorGUIUtility.standardVerticalSpacing;
 					SerializedProperty end = value.GetEndProperty();
 					int index = 0;
@@ -217,6 +223,7 @@ namespace Vertx.Editor {
 					GUI.enabled = false;
 					EditorGUI.Popup(labelRect, i, enumNames);
 					GUI.enabled = true;
+					EditorGUI.LabelField(labelRect, tooltips[i]);
 
 					Color lastColor = GUI.color;
 					if (value.propertyType == SerializedPropertyType.ObjectReference)
