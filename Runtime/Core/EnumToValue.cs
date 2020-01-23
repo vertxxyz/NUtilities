@@ -63,7 +63,17 @@ namespace Vertx
 		private Dictionary<T, TValue> dictionary;
 
 		public TValue GetValue(T key) => dictionary[key];
-		public TValue this[T key] => dictionary[key];
+		public TValue this[T key]
+		{
+			get
+			{
+				if (dictionary.TryGetValue(key, out var value))
+					return value;
+				return default;
+			}
+		}
+
+		public bool TryGetValue(T key, out TValue value) => dictionary.TryGetValue(key, out value);
 
 		private int length;
 
