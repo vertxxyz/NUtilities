@@ -11,11 +11,7 @@ namespace Vertx.Editor
 		private static readonly GUIContent packageUpdaterHeader = new GUIContent("Package Updater");
 		private static readonly GUIContent autoUpdateLabel = new GUIContent("Auto Update", "Regularly checks for updates in Package Updaters.");
 
-		static NUtilitiesPreferences()
-		{
-			if (EditorPrefs.HasKey(autoUpdatePackagesKey))
-				AutoUpdatePackages = EditorPrefs.GetBool(autoUpdatePackagesKey);
-		}
+		static NUtilitiesPreferences() => AutoUpdatePackages = EditorPrefs.GetBool(autoUpdatePackagesKey, false);
 
 		[SettingsProvider]
 		public static SettingsProvider GetPreferences() =>

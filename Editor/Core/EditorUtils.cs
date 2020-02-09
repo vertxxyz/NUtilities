@@ -16,7 +16,7 @@ namespace Vertx.Extensions {
 		{
 			string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).FullName}");
 			if (guids.Length == 0)
-				return null;
+				return Array.Empty<T>();
 			T[] values = new T[guids.Length];
 			for (int i = 0; i < guids.Length; i++)
 				values[i] = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
