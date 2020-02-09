@@ -43,7 +43,7 @@ namespace Vertx.Editor
 						if (packageUpdater == null)
 						{
 							packageUpdater = ScriptableObject.CreateInstance<PackageUpdater>();
-							AssetDatabase.CreateAsset(packageUpdater, "Package Updater.asset");
+							AssetDatabase.CreateAsset(packageUpdater, "Assets/Package Updater.asset");
 						}
 
 						if (packageUpdater.Contains(currentlySelectedPackage))
@@ -57,6 +57,10 @@ namespace Vertx.Editor
 							button.text = removeText;
 						}
 					};
+					
+					#if UNITY_2019_3_OR_NEWER
+					right.style.paddingRight = 25;
+					#endif
 				}
 			);
 
@@ -74,6 +78,7 @@ namespace Vertx.Editor
 			{
 				currentlySelectedPackage = value;
 				var packageUpdater = PackageUpdater.Instance;
+				if (button == null) return;
 				if (packageUpdater != null)
 					button.text = packageUpdater.Contains(value) ? removeText : addText;
 				else

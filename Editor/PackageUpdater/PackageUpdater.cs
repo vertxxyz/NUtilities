@@ -362,6 +362,7 @@ namespace Vertx.Editor
 		/// <returns>True if a package was removed.</returns>
 		public bool RemovePackage(PackageInfo toRemove)
 		{
+			if (updatingPackages == null) return false;
 			bool modified = false;
 			for (int i = updatingPackages.Length - 1; i >= 0; i--)
 			{
@@ -380,6 +381,7 @@ namespace Vertx.Editor
 
 		public void AddPackage(PackageInfo toAdd)
 		{
+			if(updatingPackages == null) updatingPackages = new TrackedPackage[0];
 			if (Contains(toAdd)) return;
 			ArrayUtility.Add(ref updatingPackages, new TrackedPackage
 			{
@@ -388,7 +390,7 @@ namespace Vertx.Editor
 			EditorUtility.SetDirty(this);
 		}
 
-		public bool Contains(PackageInfo packageInfo) => updatingPackages.Any(p => p.Name == packageInfo.name);
+		public bool Contains(PackageInfo packageInfo) => updatingPackages != null && updatingPackages.Any(p => p.Name == packageInfo.name);
 
 		#endregion
 	}
