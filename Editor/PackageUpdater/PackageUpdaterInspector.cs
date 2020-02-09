@@ -296,6 +296,7 @@ namespace Vertx.Editor
 		{
 			//Sort the package list.
 			var packageUpdater = (PackageUpdater) target;
+			if (packageUpdater == null) return;
 			object updatingPackagesList = EditorUtils.GetObjectFromProperty(updatingPackages, out _, out FieldInfo fieldInfo);
 			if (updatingPackagesList != null)
 			{

@@ -1,4 +1,4 @@
-﻿// #define VERBOSE_DEBUGGING
+﻿ #define VERBOSE_DEBUGGING
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,22 @@ namespace Vertx.Editor
 	[CreateAssetMenu(menuName = "Vertx/Package Updater", fileName = "Package Updater", order = 170)]
 	public class PackageUpdater : ScriptableObject
 	{
+		public static PackageUpdater Instance
+		{
+			get
+			{
+				if (instance != null)
+					return instance;
+				PackageUpdater[] packageUpdaters = EditorUtils.LoadAssetsOfType<PackageUpdater>();
+				if (packageUpdaters.Length == 0)
+					return null;
+				instance = packageUpdaters[0];
+				return instance;
+			}
+		}
+
+		private static PackageUpdater instance;
+		
 		[Serializable]
 		public struct TrackedPackage
 		{
@@ -81,6 +97,9 @@ namespace Vertx.Editor
 		{
 			//Collect the names of all the packages we're currently tracking and updating.
 			HashSet<string> currentlyUpdatingNames = new HashSet<string>();
+			if (updatingPackages == null)
+				return new List<string>();
+
 			foreach (TrackedPackage updatingPackage in updatingPackages)
 				currentlyUpdatingNames.Add(updatingPackage.Name);
 
@@ -329,11 +348,47 @@ namespace Vertx.Editor
 
 			IncrementWait();
 
+			//We can support multiple updaters.
 			PackageUpdater[] packageUpdaters = EditorUtils.LoadAssetsOfType<PackageUpdater>();
 			if (packageUpdaters == null) return;
 			foreach (PackageUpdater packageUpdater in packageUpdaters)
 				packageUpdater.UpdateTrackedPackages();
 		}
+
+		/// <summary>
+		/// Removes a package from the Updater.
+		/// </summary>
+		/// <param name="toRemove">The package to be removed.</param>
+		/// <returns>True if a package was removed.</returns>
+		public bool RemovePackage(PackageInfo toRemove)
+		{
+			bool modified = false;
+			for (int i = updatingPackages.Length - 1; i >= 0; i--)
+			{
+				TrackedPackage updatingPackage = updatingPackages[i];
+				if (updatingPackage.Name == toRemove.name)
+				{
+					ArrayUtility.RemoveAt(ref updatingPackages, i);
+					modified = true;
+				}
+			}
+
+			if(modified)
+				EditorUtility.SetDirty(this);
+			return modified;
+		}
+
+		public void AddPackage(PackageInfo toAdd)
+		{
+			if (Contains(toAdd)) return;
+			ArrayUtility.Add(ref updatingPackages, new TrackedPackage
+			{
+				Name = toAdd.name
+			});
+			EditorUtility.SetDirty(this);
+		}
+
+		public bool Contains(PackageInfo packageInfo) => updatingPackages.Any(p => p.Name == packageInfo.name);
 
 		#endregion
 	}

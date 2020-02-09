@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+	<ui:VisualElement name="Package Updater Root" class="packageUpdaterRoot">
+		<ui:Button name="PackageUpdater Button" text="Toggle in PackageUpdater"/>
+		<ui:VisualElement name="Spacer" class="spacer"/>
+	</ui:VisualElement>
+</ui:UXML>
