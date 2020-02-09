@@ -20,7 +20,7 @@ namespace Vertx.Editor
 		Latest
 	}
 
-	[CreateAssetMenu(menuName = "Vertx/Package Updater", fileName = "Package Updater")]
+	[CreateAssetMenu(menuName = "Vertx/Package Updater", fileName = "Package Updater", order = 170)]
 	public class PackageUpdater : ScriptableObject
 	{
 		[Serializable]
@@ -319,6 +319,8 @@ namespace Vertx.Editor
 
 		static void OnUpdate()
 		{
+			if (!NUtilitiesPreferences.AutoUpdatePackages)
+				return;
 			if (EditorApplication.isPlayingOrWillChangePlaymode)
 				return;
 			

@@ -9,5 +9,6 @@
 			</ui:VisualElement>
 		</ui:VisualElement>
 		<ui:Button name="Update Button" text="Check for Updates Manually" class="largeButton" enabled="false"/>
+		<Vertx.Controls.HelpBox name="Auto Update Help Box" class="autoUpdateHelpBox" text="Auto-Update is disabled." messageType="Info"/>
 	</ui:VisualElement>
 </ui:UXML>
