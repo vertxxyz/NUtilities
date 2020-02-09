@@ -81,3 +81,8 @@
 .unity-search-field-base {
 	width: auto;
 }
+
+.autoUpdateHelpBox {
+	margin-top: 6px;
+	margin-bottom: 6px;
+}

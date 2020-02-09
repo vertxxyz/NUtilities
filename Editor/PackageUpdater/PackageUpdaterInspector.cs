@@ -7,9 +7,9 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
-using Vertx.Controls;
 using Vertx.Extensions;
 using static Vertx.Editor.PackageUpdater;
+using HelpBox = Vertx.Controls.HelpBox;
 
 namespace Vertx.Editor
 {
@@ -34,7 +34,7 @@ namespace Vertx.Editor
 
 		private string[] packagesInProject;
 		private List<string> untrackedPackages;
-		
+
 		private void OnEnable()
 		{
 			updatingPackages = serializedObject.FindProperty(updatingPackagesProp);
@@ -133,7 +133,12 @@ namespace Vertx.Editor
 			updateButton = root.Q<Button>("Update Button");
 			updateButton.SetEnabled(false);
 			updateButton.clickable.clicked += DoUpdate;
-			
+
+			var helpBox = root.Q<HelpBox>("Auto Update Help Box");
+			helpBox.Q<Label>(className: HelpBox.uSSLabelClassName).text
+				= NUtilitiesPreferences.AutoUpdatePackages ? "Auto-Update is enabled." : "Auto-Update is disabled.";
+			helpBox.RegisterCallback<MouseUpEvent>(evt => SettingsService.OpenUserPreferences(NUtilitiesPreferences.PreferencesPath));
+
 			ValidateAddButton();
 			ValidatePackages();
 
@@ -291,6 +296,7 @@ namespace Vertx.Editor
 		{
 			//Sort the package list.
 			var packageUpdater = (PackageUpdater) target;
+			if (packageUpdater == null) return;
 			object updatingPackagesList = EditorUtils.GetObjectFromProperty(updatingPackages, out _, out FieldInfo fieldInfo);
 			if (updatingPackagesList != null)
 			{
