@@ -77,6 +77,7 @@ namespace Vertx.Editor
 			set
 			{
 				currentlySelectedPackage = value;
+				if(value == null) return;
 				var packageUpdater = PackageUpdater.Instance;
 				if (button == null) return;
 				if (packageUpdater != null)
