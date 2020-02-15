@@ -1,4 +1,4 @@
-﻿ #define VERBOSE_DEBUGGING
+﻿// #define VERBOSE_DEBUGGING
 
 using System;
 using System.Collections.Generic;
@@ -322,9 +322,9 @@ namespace Vertx.Editor
 		[InitializeOnLoadMethod]
 		static void Initialise()
 		{
-			if (EditorApplication.timeSinceStartup < 60)
-				//If this is the first time we're starting, update on the minute.
-				timeOfNextUpdate = 60;
+			if (EditorApplication.timeSinceStartup < 120)
+				//If this is the first time we're starting, update with a delay.
+				timeOfNextUpdate = 120;
 			else
 				IncrementWait();
 
