@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Vertx.Editor
 {
-	public static class NUtilitiesPreferences
+	internal static class NUtilitiesPreferences
 	{
 		public const string PreferencesPath = "Preferences/nUtilities";
 		private const string autoUpdatePackagesKey = "VERTX_AutoUpdatePackages";
