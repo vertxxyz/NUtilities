@@ -26,3 +26,4 @@ See the [wiki](https://github.com/vertxxyz/NUtilities/wiki) for explanations of 
 Edit your `manifest.json` file to contain `"com.vertx.nutilities": "https://github.com/vertxxyz/NUtilities.git",`
 
 To update the package with new changes, remove the lock from the bottom of the `manifest.json` file.
+Or add the package to a [Package Updater](https://github.com/vertxxyz/NUtilities/wiki/Package-Updater) Scriptable Object and update via the interface.
