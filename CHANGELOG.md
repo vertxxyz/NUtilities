@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - Increased initial polling time
  - Fixed Package Manager UI Extension NRE
  - Added CurveDisplay Attribute
+ - Package Updater's dependency on Newtonsoft.Json is optional and requires the package to be manually installed.
 
 ## [1.0.5]
  - Package Updater changes:
