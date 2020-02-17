@@ -1,5 +1,5 @@
 ﻿// #define VERBOSE_DEBUGGING
-
+#if NEWTONSOFT_JSON
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -395,3 +395,4 @@ namespace Vertx.Editor
 		#endregion
 	}
 }
+#endif

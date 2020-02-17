@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if NEWTONSOFT_JSON
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -308,3 +309,4 @@ namespace Vertx.Editor
 		}
 	}
 }
+#endif

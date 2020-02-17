@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿#if NEWTONSOFT_JSON
+using UnityEditor;
 using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -108,3 +109,4 @@ namespace Vertx.Editor
 		}
 	}
 }
+#endif
