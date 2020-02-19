@@ -4,6 +4,10 @@
   "version": "1.0.6",
   "unity": "2018.3",
   "description": "A collection of various tools and utilities for Unity.",
+  "author": {
+    "name": "Thomas Ingram",
+    "url": "http://vertx.xyz/"
+  },
   "keywords": [
     "Editor"
   ],

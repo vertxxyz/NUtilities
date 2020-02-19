@@ -17,10 +17,15 @@ namespace Vertx.Extensions {
 			string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).FullName}");
 			if (guids.Length == 0)
 				return Array.Empty<T>();
-			T[] values = new T[guids.Length];
-			for (int i = 0; i < guids.Length; i++)
-				values[i] = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
-			return values;
+			List<T> values = new List<T>();
+			foreach (string guid in guids)
+			{
+				var asset = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
+				if(asset != null)
+					values.Add(asset);
+			}
+
+			return values.ToArray();
 		}
 
 		#endregion
