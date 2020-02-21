@@ -1,0 +1,23 @@
+.dragAndDropAsset {
+    flex-grow: 1;
+    margin-right: 40px;
+    margin-left: 40px;
+    max-height: 40px;
+}
+
+.centeredVertically {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.windowRootCenterer {
+    flex-direction: row;
+    max-width: 500px;
+    flex-grow: 1;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
