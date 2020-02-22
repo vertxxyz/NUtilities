@@ -117,5 +117,28 @@ namespace Vertx.Editor
 					throw new ArgumentOutOfRangeException();
 			}
 		}
+		
+
+		public static void DrawTextureInRect(Rect r, Texture texture)
+		{
+			float h = r.height - 2;
+			Rect textureRect;
+			if (texture.height == texture.width)
+				textureRect = new Rect(r.x, r.y, h, h);
+			else if (texture.height > texture.width)
+			{
+				float width = h * (texture.width / (float) texture.height);
+				float missingWidth = h - width;
+				textureRect = new Rect(r.x + missingWidth / 2f, r.y, width, h);
+			}
+			else
+			{
+				float height = h * (texture.height / (float) texture.width);
+				float missingHeight = h - height;
+				textureRect = new Rect(r.x, r.y + missingHeight / 2f, h, height);
+			}
+
+			GUI.DrawTexture(textureRect, texture);
+		}
 	}
 }

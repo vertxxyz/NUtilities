@@ -22,6 +22,11 @@ namespace Vertx.Editor
 
 		public string TypeString => typeString;
 
+		[SerializeField]
+		private string iconPropertyPath;
+
+		public string IconPropertyPath => iconPropertyPath;
+
 		public void Configure(Object target) => typeString = target.GetType().AssemblyQualifiedName;
 	}
 }

@@ -22,25 +22,33 @@ namespace Vertx.Editor
 		
 		private List<Object> objects;
 		private List<ColumnContext> columnContexts;
-		public List<ColumnContext> ColumnContexts => columnContexts;
 		
 		private MultiColumnTreeView treeView;
 		[SerializeField] TreeViewState treeViewState;
 		[SerializeField] MultiColumnHeaderState multiColumnHeaderState;
 
 		private IMGUIContainer assetListContainer;
+
+		private static Texture hoveredIcon;
 		
 		#endregion
 
 		public class ColumnContext
 		{
 			private readonly string propertyName;
+			private readonly string iconPropertyName;
 			private readonly Action<Rect, SerializedProperty> onGUI;
 
 			public enum GUIType
 			{
-				Property,
-				LargeObjectLabelWithPing
+				Property
+			}
+
+			public ColumnContext(string propertyName, string iconPropertyName)
+			{
+				this.propertyName = propertyName;
+				this.iconPropertyName = iconPropertyName;
+				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName);
 			}
 			
 			public ColumnContext(string propertyName, GUIType guiType)
@@ -50,9 +58,6 @@ namespace Vertx.Editor
 				{
 					case GUIType.Property:
 						onGUI = Property;
-						break;
-					case GUIType.LargeObjectLabelWithPing:
-						onGUI = LargeObjectLabelWithPing;
 						break;
 					default:
 						throw new ArgumentOutOfRangeException(nameof(guiType), guiType, null);
@@ -80,13 +85,32 @@ namespace Vertx.Editor
 
 			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, true);
 
-			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty o)
+			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName)
 			{
-				Object target = o.serializedObject.targetObject;
+				Object target = p.serializedObject.targetObject;
+				if (!(target is Texture texture))
+				{
+					if (string.IsNullOrEmpty(iconPropertyName))
+						texture = null;
+					else
+					{
+						SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
+						texture = iconProperty.objectReferenceValue as Texture;
+					}
+				}
+				Event e = Event.current;
+				
+				if (texture != null)
+				{
+					float h = r.height - 2;
+					AssetListUtility.DrawTextureInRect(new Rect(r.x + 10, r.y + 1, h, h), texture);
+					if (r.Contains(e.mousePosition))
+						hoveredIcon = texture;
+				}
+				
 				GUI.Label(
 					new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height),
 					target.name);
-				Event e = Event.current;
 				if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
 					EditorGUIUtility.PingObject(target);
 			}
@@ -180,6 +204,9 @@ namespace Vertx.Editor
 			rootVisualElement.styleSheets.Add(styleSheet);
 
 			var toolbarSearchField = rootVisualElement.Q<ToolbarSearchField>("SearchField");
+			string searchString = treeView.searchString;
+			if(searchString != null)
+				toolbarSearchField.SetValueWithoutNotify(treeView.searchString);
 			toolbarSearchField.RegisterValueChangedCallback(evt => treeView.searchString = evt.newValue);
 
 			assetListContainer = rootVisualElement.Q<IMGUIContainer>("AssetList");
@@ -193,14 +220,18 @@ namespace Vertx.Editor
 			{
 				new MultiColumnHeaderState.Column
 				{
-					headerContent = new GUIContent("Name")
+					headerContent = new GUIContent("Name"),
+					allowToggleVisibility = false,
+					autoResize = true,
+					headerTextAlignment = TextAlignment.Center,
+					sortingArrowAlignment = TextAlignment.Left
 				}
 			};
 
 
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
-				new ColumnContext("m_Name", ColumnContext.GUIType.LargeObjectLabelWithPing)
+				new ColumnContext("m_Name", configuration.IconPropertyPath)
 			};
 			
 			foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
@@ -225,6 +256,17 @@ namespace Vertx.Editor
 		{
 			Rect rect = assetListContainer.contentRect;
 			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
+			
+			if (hoveredIcon != null)
+			{
+				float scale = Mathf.Min(position.width, position.height) / 2f;
+				float scaleHalf = scale / 2f;
+				AssetListUtility.DrawTextureInRect(new Rect(position.width / 2f - scaleHalf, position.height / 2f - scaleHalf, scale, scale), hoveredIcon);
+				hoveredIcon = null;
+				Repaint();
+			}
+			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax)
+				Repaint();
 		}
 		
 		protected class MultiColumnTreeView : TreeView
