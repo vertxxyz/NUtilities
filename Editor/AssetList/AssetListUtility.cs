@@ -21,7 +21,7 @@ namespace Vertx.Editor
 			assetListWindow.Show();
 			return true;
 		}
-		
+
 		public static List<Object> LoadAssetsByTypeName(string assemblyQualifiedName, out Type type, out bool isComponent)
 		{
 			type = Type.GetType(assemblyQualifiedName);
@@ -55,7 +55,67 @@ namespace Vertx.Editor
 				if (asset != null)
 					values.Add(asset);
 			}
+
 			return values;
+		}
+
+		public static object GetSortableValue(SerializedProperty property)
+		{
+			switch (property.propertyType)
+			{
+				case SerializedPropertyType.Integer:
+					return property.intValue;
+				case SerializedPropertyType.Boolean:
+					return property.boolValue;
+				case SerializedPropertyType.Float:
+					return property.floatValue;
+				case SerializedPropertyType.String:
+					return property.stringValue;
+				case SerializedPropertyType.ObjectReference:
+					return property.objectReferenceValue.name;
+				case SerializedPropertyType.LayerMask:
+					return property.intValue;
+				case SerializedPropertyType.Enum:
+					return property.intValue;
+				case SerializedPropertyType.ArraySize:
+					return property.arraySize;
+				case SerializedPropertyType.Character:
+					return property.stringValue;
+				//Values below this point are sorted completely arbitrarily
+				case SerializedPropertyType.Color:
+					return property.colorValue.grayscale;
+				case SerializedPropertyType.Vector2:
+					return property.vector2Value.sqrMagnitude;
+				case SerializedPropertyType.Vector3:
+					return property.vector3Value.sqrMagnitude;
+				case SerializedPropertyType.Vector4:
+					return property.vector4Value.sqrMagnitude;
+				case SerializedPropertyType.AnimationCurve:
+					return property.animationCurveValue.length;
+				case SerializedPropertyType.Quaternion:
+					return property.quaternionValue.eulerAngles.y;
+				case SerializedPropertyType.FixedBufferSize:
+					return property.fixedBufferSize;
+				case SerializedPropertyType.Vector2Int:
+					return property.vector2IntValue.sqrMagnitude;
+				case SerializedPropertyType.Vector3Int:
+					return property.vector3IntValue.sqrMagnitude;
+				case SerializedPropertyType.Rect:
+					return property.rectValue.size.sqrMagnitude;
+				case SerializedPropertyType.RectInt:
+					return property.rectIntValue.size.sqrMagnitude;
+				case SerializedPropertyType.Bounds:
+					return property.boundsValue.size.sqrMagnitude;
+				case SerializedPropertyType.BoundsInt:
+					return property.boundsIntValue.size.sqrMagnitude;
+				case SerializedPropertyType.ExposedReference:
+					return property.exposedReferenceValue.name;
+				case SerializedPropertyType.ManagedReference:
+				case SerializedPropertyType.Gradient:
+				case SerializedPropertyType.Generic:
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
 		}
 	}
 }

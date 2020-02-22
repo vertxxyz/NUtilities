@@ -63,6 +63,12 @@ namespace Vertx.Editor
 
 			public SerializedProperty GetValue(SerializedObject context) => context.FindProperty(propertyName);
 
+			public object GetSortableValue(SerializedObject context)
+			{
+				SerializedProperty property = GetValue(context);
+				return AssetListUtility.GetSortableValue(property);
+			}
+
 			public void DoTint()
 			{
 				/*EditorGUI.DrawRect(args.rowRect, new Color(1f, 0f, 0f, 0.15f));
@@ -273,10 +279,10 @@ namespace Vertx.Editor
 						ascending ? source.ThenBy(selector) : source.ThenByDescending(selector);
 
 					IOrderedEnumerable<Object> OrderFirst() =>
-						Order(allObjects, o=> columnContext.GetValue(GetSerializedObject(o)));
+						Order(allObjects, o=> columnContext.GetSortableValue(GetSerializedObject(o)));
 
 					IOrderedEnumerable<Object> OrderSubsequent(IOrderedEnumerable<Object> collection)
-						=> ThenBy(collection, o => columnContext.GetValue(GetSerializedObject(o)));
+						=> ThenBy(collection, o => columnContext.GetSortableValue(GetSerializedObject(o)));
 				}
 
 				allObjects = initialOrder.ToList();
