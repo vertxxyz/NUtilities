@@ -17,7 +17,7 @@ namespace Vertx.Editor
 
 		public ColumnConfiguration[] Columns => columns;
 
-		[SerializeField]
+		[SerializeField, TextArea(1, 5)]
 		private string typeString;
 
 		public string TypeString => typeString;

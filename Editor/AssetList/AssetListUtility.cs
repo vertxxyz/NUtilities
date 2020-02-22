@@ -22,6 +22,8 @@ namespace Vertx.Editor
 			return true;
 		}
 
+		private static readonly string[] filterArray = {"Assets"};
+
 		public static List<Object> LoadAssetsByTypeName(string assemblyQualifiedName, out Type type, out bool isComponent)
 		{
 			type = Type.GetType(assemblyQualifiedName);
@@ -41,10 +43,10 @@ namespace Vertx.Editor
 				return values;
 			}
 
-			string[] guids = AssetDatabase.FindAssets($"t:{type.FullName}");
+			string[] guids = AssetDatabase.FindAssets($"t:{type.FullName}", filterArray);
 			if (guids.Length == 0)
 			{
-				guids = AssetDatabase.FindAssets($"t:{type.Name}");
+				guids = AssetDatabase.FindAssets($"t:{type.Name}", filterArray);
 				if (guids.Length == 0)
 					return values;
 			}
@@ -117,7 +119,7 @@ namespace Vertx.Editor
 					throw new ArgumentOutOfRangeException();
 			}
 		}
-		
+
 
 		public static void DrawTextureInRect(Rect r, Texture texture)
 		{
