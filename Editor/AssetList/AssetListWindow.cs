@@ -29,7 +29,7 @@ namespace Vertx.Editor
 
 		private IMGUIContainer assetListContainer;
 
-		private static Texture hoveredIcon;
+		private Texture hoveredIcon;
 		
 		#endregion
 
@@ -44,11 +44,11 @@ namespace Vertx.Editor
 				Property
 			}
 
-			public ColumnContext(string propertyName, string iconPropertyName)
+			public ColumnContext(string propertyName, string iconPropertyName, AssetListWindow window)
 			{
 				this.propertyName = propertyName;
 				this.iconPropertyName = iconPropertyName;
-				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName);
+				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window);
 			}
 			
 			public ColumnContext(string propertyName, GUIType guiType)
@@ -85,7 +85,7 @@ namespace Vertx.Editor
 
 			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, true);
 
-			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName)
+			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName, AssetListWindow window)
 			{
 				Object target = p.serializedObject.targetObject;
 				if (!(target is Texture texture))
@@ -104,8 +104,8 @@ namespace Vertx.Editor
 				{
 					float h = r.height - 2;
 					AssetListUtility.DrawTextureInRect(new Rect(r.x + 10, r.y + 1, h, h), texture);
-					if (r.Contains(e.mousePosition))
-						hoveredIcon = texture;
+					if (r.Contains(e.mousePosition) && focusedWindow == window)
+						window.hoveredIcon = texture;
 				}
 				
 				GUI.Label(
@@ -231,7 +231,7 @@ namespace Vertx.Editor
 
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
-				new ColumnContext("m_Name", configuration.IconPropertyPath)
+				new ColumnContext("m_Name", configuration.IconPropertyPath, this)
 			};
 			
 			foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
@@ -248,7 +248,7 @@ namespace Vertx.Editor
 
 			}
 
-			this.columnContexts = contexts;
+			columnContexts = contexts;
 			return columns.ToArray();
 		}
 
@@ -265,7 +265,7 @@ namespace Vertx.Editor
 				hoveredIcon = null;
 				Repaint();
 			}
-			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax)
+			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax && focusedWindow == this)
 				Repaint();
 		}
 		
