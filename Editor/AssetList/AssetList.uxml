@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <uie:Toolbar>
+        <ui:VisualElement class="toolbarRightAlign">
+            <uie:ToolbarSearchField name="SearchField" class="searchField"/>
+        </ui:VisualElement>
+    </uie:Toolbar>
+    <ui:IMGUIContainer name="AssetList" class="assetList" />
+</ui:UXML>

@@ -21,33 +21,47 @@ namespace Vertx.Editor
 		private bool isComponent;
 		
 		private List<Object> objects;
-		private List<Context> contexts;
-		public List<Context> Contexts => contexts;
+		private List<ColumnContext> columnContexts;
+		public List<ColumnContext> ColumnContexts => columnContexts;
 		
 		private MultiColumnTreeView treeView;
 		[SerializeField] TreeViewState treeViewState;
 		[SerializeField] MultiColumnHeaderState multiColumnHeaderState;
+
+		private IMGUIContainer assetListContainer;
 		
 		#endregion
 
-		public class Context
+		public class ColumnContext
 		{
-			public readonly string Name;
-			private Action onGUI;
+			private readonly string propertyName;
+			private readonly Action<Rect, SerializedProperty> onGUI;
+
+			public enum GUIType
+			{
+				Property,
+				LargeObjectLabelWithPing
+			}
 			
-			public Context(string name)
+			public ColumnContext(string propertyName, GUIType guiType)
 			{
-				Name = name;
+				this.propertyName = propertyName;
+				switch (guiType)
+				{
+					case GUIType.Property:
+						onGUI = Property;
+						break;
+					case GUIType.LargeObjectLabelWithPing:
+						onGUI = LargeObjectLabelWithPing;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(guiType), guiType, null);
+				}
 			}
 
-			public void OnGUI(Rect cellRect) => onGUI?.Invoke();
+			public void OnGUI(Rect cellRect, SerializedProperty @object) => onGUI?.Invoke(cellRect, @object);
 
-			public static object GetValue(Context context)
-			{
-				
-				//TODO
-				throw new NotImplementedException();
-			}
+			public SerializedProperty GetValue(SerializedObject context) => context.FindProperty(propertyName);
 
 			public void DoTint()
 			{
@@ -56,6 +70,19 @@ namespace Vertx.Editor
 				Color color = GUI.color;
 				color.a *= 0.3f;
 				GUI.color = color;*/
+			}
+
+			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, true);
+
+			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty o)
+			{
+				Object target = o.serializedObject.targetObject;
+				GUI.Label(
+					new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height),
+					target.name);
+				Event e = Event.current;
+				if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
+					EditorGUIUtility.PingObject(target);
 			}
 		}
 
@@ -76,7 +103,6 @@ namespace Vertx.Editor
 
 		private void OnEnable()
 		{
-			rootVisualElement.Clear();
 			if(configuration == null)
 				InitialiseWithoutConfiguration();
 			else
@@ -85,9 +111,28 @@ namespace Vertx.Editor
 
 		private void InitialiseWithoutConfiguration()
 		{
+			rootVisualElement.Clear();
+			
 			VisualTreeAsset uxml = StyleExtensions.GetUXML("BlankAssetList");
 			uxml.CloneTree(rootVisualElement);
 			rootVisualElement.Q<DragAndDropBox>("DropTarget").RegisterSingle(CreateNewWindow);
+			var container = rootVisualElement.Q<VisualElement>("ListViewContainer");
+			AssetListConfiguration[] configurations = EditorUtils.LoadAssetsOfType<AssetListConfiguration>();
+			if(configurations.Length == 0)
+				container.RemoveFromHierarchy();
+			else
+			{
+				var listView = container.Q<ListView>("ListView");
+				foreach (AssetListConfiguration configAsset in configurations)
+				{
+					var button = new Button(() => InitialiseWithConfiguration(configAsset))
+					{
+						text = configAsset.name
+					};
+					button.AddToClassList("listViewButton");
+					listView.Add(button);
+				}
+			}
 
 			void CreateNewWindow(Object o)
 			{
@@ -97,11 +142,14 @@ namespace Vertx.Editor
 				string path = EditorUtility.SaveFilePanelInProject($"Create New {name} List Configuration", $"{name} List", "asset", $"Save a Configuration asset for {name} List");
 				if (string.IsNullOrEmpty(path)) return;
 				AssetDatabase.CreateAsset(listConfiguration, path);
+				InitialiseWithConfiguration(listConfiguration);
 			}
 		}
 		
 		internal void InitialiseWithConfiguration(AssetListConfiguration configuration)
 		{
+			rootVisualElement.Clear();
+			
 			this.configuration = configuration;
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent);
 			
@@ -120,20 +168,35 @@ namespace Vertx.Editor
 				multiColumnHeader.ResizeToFit();
 			
 			treeView = new MultiColumnTreeView(treeViewState, multiColumnHeader, this);
-			
-			Toolbar toolbar = new Toolbar();
-			toolbar.Add(new ToolbarSearchField());
-			rootVisualElement.Add(toolbar);
-			
-			IMGUIContainer imguiContainer = new IMGUIContainer(MultiColumnListGUI);
-			rootVisualElement.Add(imguiContainer);
-			
+
+			(StyleSheet styleSheet, VisualTreeAsset uxml) = StyleExtensions.GetStyleSheetAndUXML("AssetList");
+			uxml.CloneTree(rootVisualElement);
+			rootVisualElement.styleSheets.Add(styleSheet);
+
+			var toolbarSearchField = rootVisualElement.Q<ToolbarSearchField>("SearchField");
+			toolbarSearchField.RegisterValueChangedCallback(evt => treeView.searchString = evt.newValue);
+
+			assetListContainer = rootVisualElement.Q<IMGUIContainer>("AssetList");
+			assetListContainer.onGUIHandler = MultiColumnListGUI;
+
 		}
 
 		private MultiColumnHeaderState.Column[] GetColumnsFromConfiguration(AssetListConfiguration configuration)
 		{
-			List<MultiColumnHeaderState.Column> columns = new List<MultiColumnHeaderState.Column>();
-			List<Context> contexts = new List<Context>();
+			List<MultiColumnHeaderState.Column> columns = new List<MultiColumnHeaderState.Column>
+			{
+				new MultiColumnHeaderState.Column
+				{
+					headerContent = new GUIContent("Name")
+				}
+			};
+
+
+			List<ColumnContext> contexts = new List<ColumnContext>
+			{
+				new ColumnContext("m_Name", ColumnContext.GUIType.LargeObjectLabelWithPing)
+			};
+			
 			foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
 			{
 				columns.Add(new MultiColumnHeaderState.Column
@@ -141,37 +204,49 @@ namespace Vertx.Editor
 					headerContent = new GUIContent(c.Title)
 				});
 				
-				contexts.Add(new Context(
-						c.Title
-					));
+				contexts.Add(new ColumnContext(
+					c.Title,
+					ColumnContext.GUIType.Property
+				));
+
 			}
 
-			this.contexts = contexts;
+			this.columnContexts = contexts;
 			return columns.ToArray();
 		}
 
 		private void MultiColumnListGUI()
 		{
-			
+			Rect rect = assetListContainer.contentRect;
+			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
 		}
 		
 		protected class MultiColumnTreeView : TreeView
 		{
 			private readonly AssetListWindow window;
 			private readonly Queue<int> sortQueue = new Queue<int>();
-			private List<Context> allContexts;
+			private List<Object> allObjects;
+			private readonly Dictionary<Object, SerializedObject> serializedObjectLookup = new Dictionary<Object, SerializedObject>();
 
 			public MultiColumnTreeView(TreeViewState state,
 				MultiColumnHeader multicolumnHeader, AssetListWindow window)
 				: base(state, multicolumnHeader)
 			{
 				this.window = window;
-				allContexts = window.Contexts;
+				allObjects = window.objects;
 				showAlternatingRowBackgrounds = true;
 				rowHeight = 20;
 				multicolumnHeader.sortingChanged += OnSortingChanged;
 
 				Reload();
+			}
+
+			private SerializedObject GetSerializedObject(Object o)
+			{
+				if (serializedObjectLookup.TryGetValue(o, out var sO)) return sO;
+				sO = new SerializedObject(o);
+				serializedObjectLookup.Add(o, sO);
+				return sO;
 			}
 
 			private void OnSortingChanged(MultiColumnHeader multicolumnheader)
@@ -182,40 +257,39 @@ namespace Vertx.Editor
 					sortQueue.Dequeue();
 
 				int count = 0;
-				IOrderedEnumerable<Context> initialOrder = null;
+				IOrderedEnumerable<Object> initialOrder = null;
 				foreach (int i in sortQueue.Reverse())
 				{
 					bool ascending = multiColumnHeader.IsSortedAscending(i);
-					initialOrder = count++ == 0 ? OrderFirst(ascending) : OrderSubsequent(initialOrder, ascending);
+					ColumnContext columnContext = window.columnContexts[i];
+					initialOrder = count++ == 0 ? OrderFirst() : OrderSubsequent(initialOrder);
+					
+					IOrderedEnumerable<TQuery> Order<TQuery, TKey>
+						(IEnumerable<TQuery> source, Func<TQuery, TKey> selector) =>
+						ascending ? source.OrderBy(selector) : source.OrderByDescending(selector);
+
+					IOrderedEnumerable<TQuery> ThenBy<TQuery, TKey>
+						(IOrderedEnumerable<TQuery> source, Func<TQuery, TKey> selector) =>
+						ascending ? source.ThenBy(selector) : source.ThenByDescending(selector);
+
+					IOrderedEnumerable<Object> OrderFirst() =>
+						Order(allObjects, o=> columnContext.GetValue(GetSerializedObject(o)));
+
+					IOrderedEnumerable<Object> OrderSubsequent(IOrderedEnumerable<Object> collection)
+						=> ThenBy(collection, o => columnContext.GetValue(GetSerializedObject(o)));
 				}
 
-				allContexts = initialOrder.ToList();
+				allObjects = initialOrder.ToList();
 				for (int i = 0; i < rootItem.children.Count; i++)
 				{
 					TreeViewItem content = rootItem.children[i];
-					content.displayName = allContexts[i].Name;
+					content.displayName = allObjects[i].name;
 				}
-
-				IOrderedEnumerable<TQuery> Order<TQuery, TKey>
-					(IEnumerable<TQuery> source, Func<TQuery, TKey> selector, bool ascending) =>
-					ascending ? source.OrderBy(selector) : source.OrderByDescending(selector);
-
-				IOrderedEnumerable<TQuery> ThenBy<TQuery, TKey>
-					(IOrderedEnumerable<TQuery> source, Func<TQuery, TKey> selector, bool ascending) =>
-					ascending ? source.ThenBy(selector) : source.ThenByDescending(selector);
-
-				IOrderedEnumerable<Context> OrderFirst(bool ascending) =>
-					Order(allContexts, Context.GetValue, ascending);
-
-				IOrderedEnumerable<Context> OrderSubsequent(IOrderedEnumerable<Context> collection, bool ascending)
-					=> ThenBy(collection, Context.GetValue, ascending);
 			}
 
 			protected override void RowGUI(RowGUIArgs args)
 			{
 				TreeViewItem item = args.item;
-				Context context = allContexts[item.id];
-
 				for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
 				{
 					Rect cellRect = args.GetCellRect(i);
@@ -227,24 +301,24 @@ namespace Vertx.Editor
 			
 			private void CellGUI(Rect cellRect, TreeViewItem treeContentValue, int columnIndex, ref RowGUIArgs args)
 			{
-				Context context = allContexts[treeContentValue.id];
-				if (context == null)
+				ColumnContext columnContext = window.columnContexts[columnIndex];
+				if (columnContext == null)
 				{
 					Reload();
 					return;
 				}
-
-				context.OnGUI(cellRect);
+				
+				columnContext.OnGUI(cellRect, columnContext.GetValue(GetSerializedObject(allObjects[treeContentValue.id])));
 			}
 
 
 			protected override TreeViewItem BuildRoot()
 			{
 				var root = new TreeViewItem {id = 0, depth = -1, displayName = "Root"};
-				for (int i = 0; i < allContexts.Count; i++)
+				for (int i = 0; i < allObjects.Count; i++)
 				{
-					if (allContexts[i] == null) continue;
-					root.AddChild(new TreeViewItem(i) {displayName = window.Contexts[i].Name}); //Need to set display name for the search
+					if (allObjects[i] == null) continue;
+					root.AddChild(new TreeViewItem(i) {displayName = allObjects[i].name}); //Need to set display name for the search
 				}
 
 				SetupDepthsFromParentsAndChildren(root);

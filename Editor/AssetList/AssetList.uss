@@ -1,0 +1,8 @@
+.assetList {
+	flex-grow: 1;
+}
+
+.toolbarRightAlign {
+	flex-grow: 1;
+	align-items: flex-end;
+}

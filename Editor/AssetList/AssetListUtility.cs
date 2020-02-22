@@ -43,7 +43,12 @@ namespace Vertx.Editor
 
 			string[] guids = AssetDatabase.FindAssets($"t:{type.FullName}");
 			if (guids.Length == 0)
-				return values;
+			{
+				guids = AssetDatabase.FindAssets($"t:{type.Name}");
+				if (guids.Length == 0)
+					return values;
+			}
+
 			foreach (string guid in guids)
 			{
 				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
