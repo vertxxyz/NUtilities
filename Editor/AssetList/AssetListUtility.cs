@@ -24,7 +24,74 @@ namespace Vertx.Editor
 
 		private static readonly string[] filterArray = {"Assets"};
 
-		public static List<Object> LoadAssetsByTypeName(string assemblyQualifiedName, out Type type, out bool isComponent)
+		public static Object LoadAssetByTypeName(
+			Type type,
+			bool isComponent,
+			AssetType assetType)
+		{
+			if (type == null)
+				return null;
+
+			if (isComponent)
+			{
+				bool assets = false, scenes = false;
+				switch (assetType)
+				{
+					case AssetType.InAssets:
+						assets = true;
+						break;
+					case AssetType.InScene:
+						scenes = true;
+						break;
+					case AssetType.InSceneAndAssets:
+						assets = true;
+						scenes = true;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(assetType), assetType, null);
+				}
+
+				if (scenes)
+				{
+					var obj = Object.FindObjectOfType(type);
+					if (obj != null)
+						return obj;
+				}
+
+				if (assets)
+				{
+					GameObject[] prefabs = EditorUtils.LoadAssetsOfType<GameObject>();
+					foreach (GameObject prefab in prefabs)
+						if (prefab.TryGetComponent(type, out var obj))
+							return obj;
+				}
+
+				return null;
+			}
+
+			string[] guids = AssetDatabase.FindAssets($"t:{type.FullName}", filterArray);
+			if (guids.Length == 0)
+			{
+				guids = AssetDatabase.FindAssets($"t:{type.Name}", filterArray);
+				if (guids.Length == 0)
+					return null;
+			}
+
+			foreach (string guid in guids)
+			{
+				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
+				if (asset != null)
+					return asset;
+			}
+
+			return null;
+		}
+		
+		public static List<Object> LoadAssetsByTypeName(
+			string assemblyQualifiedName,
+			out Type type,
+			out bool isComponent,
+			AssetType assetType)
 		{
 			type = Type.GetType(assemblyQualifiedName);
 			isComponent = false;
@@ -36,10 +103,34 @@ namespace Vertx.Editor
 			isComponent = type.IsSubclassOf(typeof(Component));
 			if (isComponent)
 			{
-				GameObject[] prefabs = EditorUtils.LoadAssetsOfType<GameObject>();
-				values = new List<Object>();
-				foreach (GameObject prefab in prefabs)
-					values.AddRange(prefab.GetComponents(type));
+				bool assets = false, scenes = false;
+				switch (assetType)
+				{
+					case AssetType.InAssets:
+						assets = true;
+						break;
+					case AssetType.InScene:
+						scenes = true;
+						break;
+					case AssetType.InSceneAndAssets:
+						assets = true;
+						scenes = true;
+						break;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(assetType), assetType, null);
+				}
+
+				if (assets)
+				{
+					GameObject[] prefabs = EditorUtils.LoadAssetsOfType<GameObject>();
+					values = new List<Object>();
+					foreach (GameObject prefab in prefabs)
+						values.AddRange(prefab.GetComponents(type));
+				}
+
+				if (scenes)
+					values.AddRange(Object.FindObjectsOfType(type));
+
 				return values;
 			}
 

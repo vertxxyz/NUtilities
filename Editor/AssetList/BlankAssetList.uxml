@@ -3,7 +3,7 @@
         <Style src="BlankAssetList.uss" />
         <ui:VisualElement name="VerticalCenterer" class="centeredVertically">
             <ui:VisualElement class="spacer" />
-            <Vertx.Controls.DragAndDropBox name="DropTarget" text="Drag and Drop Asset to Create Window" class="dragAndDropAsset" />
+            <Vertx.Controls.DragAndDropBox name="DropTarget" text="Drag and Drop Asset or Component to Create Window" class="dragAndDropAsset" />
             <ui:VisualElement name="ListViewContainer" class="listViewContainer">
                 <ui:Label text="Asset Lists" class="listViewLabel"/>
                 <ui:ListView focusable="True" name="ListView" class="listView" />

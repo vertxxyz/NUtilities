@@ -39,7 +39,7 @@ namespace Vertx.Controls
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription text = new UxmlStringAttributeDescription {name = "text"};
-			readonly UxmlBoolAttributeDescription allowSceneObjectsDesc = new UxmlBoolAttributeDescription {name = "allowSceneObjects"};
+			readonly UxmlBoolAttributeDescription allowSceneObjectsDesc = new UxmlBoolAttributeDescription {name = "allowSceneObjects", defaultValue = true};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{

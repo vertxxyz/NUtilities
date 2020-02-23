@@ -1,10 +1,24 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Vertx.Editor
 {
+	internal enum AssetType
+	{
+		InAssets,
+		InScene,
+		InSceneAndAssets
+	}
+
 	internal class AssetListConfiguration : ScriptableObject
 	{
-		[System.Serializable]
+		[SerializeField]
+		private AssetType assetType = AssetType.InSceneAndAssets;
+
+		public AssetType AssetContext => assetType;
+		
+		[Serializable]
 		internal class ColumnConfiguration
 		{
 			public string PropertyPath;
@@ -27,6 +41,13 @@ namespace Vertx.Editor
 
 		public string IconPropertyPath => iconPropertyPath;
 
-		public void Configure(Object target) => typeString = target.GetType().AssemblyQualifiedName;
+		public void Configure(Object target)
+		{
+			Type type = target.GetType();
+			typeString = type.AssemblyQualifiedName;
+			assetType = type.IsSubclassOf(typeof(Component)) ?
+				AssetType.InSceneAndAssets :
+				AssetType.InAssets;
+		}
 	}
 }

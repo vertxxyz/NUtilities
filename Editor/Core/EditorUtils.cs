@@ -6,17 +6,46 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace Vertx.Extensions {
 	public static class EditorUtils {
 
 		#region Assets
-
-		public static T[] LoadAssetsOfType<T>() where T : UnityEngine.Object
+		
+		public static Object LoadAssetOfType(Type type)
 		{
-			string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).FullName}");
-			if (guids.Length == 0)
+			if(!TryGetGUIDs(out var guids, type))
+				return null;
+			foreach (string guid in guids)
+			{
+				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
+				if (asset != null && asset.GetType() == type)
+					return asset;
+			}
+
+			return null;
+		}
+		
+		public static T LoadAssetOfType<T>() where T : Object
+		{
+			if(!TryGetGUIDs(out var guids, typeof(T)))
+				return null;
+			foreach (string guid in guids)
+			{
+				var asset = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
+				if (asset != null)
+					return asset;
+			}
+
+			return null;
+		}
+
+		public static T[] LoadAssetsOfType<T>() where T : Object
+		{
+			if(!TryGetGUIDs(out var guids, typeof(T)))
 				return Array.Empty<T>();
+
 			List<T> values = new List<T>();
 			foreach (string guid in guids)
 			{
@@ -26,6 +55,18 @@ namespace Vertx.Extensions {
 			}
 
 			return values.ToArray();
+		}
+
+		private static bool TryGetGUIDs(out string[] guids, Type type)
+		{
+			guids = AssetDatabase.FindAssets($"t:{type.FullName}");
+			if (guids.Length == 0)
+			{
+				guids = AssetDatabase.FindAssets($"t:{type.Name}");
+				if (guids.Length == 0)
+					return false;
+			}
+			return true;
 		}
 
 		#endregion

@@ -36,7 +36,6 @@ namespace Vertx.Editor
 		public class ColumnContext
 		{
 			private readonly string propertyName;
-			private readonly string iconPropertyName;
 			private readonly Action<Rect, SerializedProperty> onGUI;
 
 			public enum GUIType
@@ -47,7 +46,6 @@ namespace Vertx.Editor
 			public ColumnContext(string propertyName, string iconPropertyName, AssetListWindow window)
 			{
 				this.propertyName = propertyName;
-				this.iconPropertyName = iconPropertyName;
 				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window);
 			}
 			
@@ -83,7 +81,7 @@ namespace Vertx.Editor
 				GUI.color = color;*/
 			}
 
-			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, true);
+			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, true);
 
 			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName, AssetListWindow window)
 			{
@@ -181,7 +179,7 @@ namespace Vertx.Editor
 			rootVisualElement.Clear();
 			
 			this.configuration = configuration;
-			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent);
+			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
 			
 			if (treeViewState == null)
 				treeViewState = new TreeViewState();
@@ -233,19 +231,21 @@ namespace Vertx.Editor
 			{
 				new ColumnContext("m_Name", configuration.IconPropertyPath, this)
 			};
-			
-			foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
-			{
-				columns.Add(new MultiColumnHeaderState.Column
-				{
-					headerContent = new GUIContent(c.Title)
-				});
-				
-				contexts.Add(new ColumnContext(
-					c.Title,
-					ColumnContext.GUIType.Property
-				));
 
+			if (configuration.Columns != null)
+			{
+				foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
+				{
+					columns.Add(new MultiColumnHeaderState.Column
+					{
+						headerContent = new GUIContent(c.Title)
+					});
+
+					contexts.Add(new ColumnContext(
+						c.Title,
+						ColumnContext.GUIType.Property
+					));
+				}
 			}
 
 			columnContexts = contexts;
