@@ -269,10 +269,16 @@ namespace Vertx.Extensions
 		{
 			private readonly EditorGUILayout.VerticalScope scope;
 
-			public OutlineScope(bool drawBackground = true)
+			private static GUIStyle _smallMargins;
+			private static GUIStyle SmallMargins => _smallMargins ?? (_smallMargins = new GUIStyle(EditorStyles.inspectorDefaultMargins)
+			{
+				padding = new RectOffset(4, 4, 2, 2),
+			});
+			
+			public OutlineScope(bool drawBackground = true, bool largeMargins = true)
 			{
 				GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
-				scope = new EditorGUILayout.VerticalScope(EditorStyles.inspectorDefaultMargins);
+				scope = new EditorGUILayout.VerticalScope(largeMargins ? EditorStyles.inspectorDefaultMargins : SmallMargins);
 				Rect rect = scope.rect;
 				if (drawBackground)
 				{
@@ -318,10 +324,12 @@ namespace Vertx.Extensions
 
 		public class ContainerScope : IDisposable
 		{
+			private readonly int bottomMargin;
 			private readonly EditorGUILayout.VerticalScope scope;
 
-			public ContainerScope(GUIContent headerLabel)
+			public ContainerScope(GUIContent headerLabel, int bottomMargin = 8)
 			{
+				this.bottomMargin = bottomMargin;
 				DrawHeaderWithBackground(headerLabel);
 				scope = new EditorGUILayout.VerticalScope(SmallPadding);
 				Rect rect = scope.rect;
@@ -334,7 +342,7 @@ namespace Vertx.Extensions
 			public void Dispose()
 			{
 				scope.Dispose();
-				GUILayout.Space(8);
+				GUILayout.Space(bottomMargin);
 			}
 		}
 		
@@ -363,7 +371,6 @@ namespace Vertx.Extensions
 		public static void NextGUIRect(this ref Rect rect) => rect.y = rect.yMax + EditorGUIUtility.standardVerticalSpacing;
 
 		public static void Indent(this ref Rect rect, float amount) => rect.xMin += amount;
-
 		#endregion
 
 		public static float HeightWithSpacing => EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;

@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -24,6 +25,10 @@ namespace Vertx.Editor
 			public string PropertyPath;
 
 			public string Title;
+
+			public SerializedPropertyType PropertyType;
+
+			public NumericalPropertyDisplay NumericalDisplay;
 		}
 
 		[SerializeField]

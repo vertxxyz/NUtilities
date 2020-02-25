@@ -29,111 +29,9 @@ namespace Vertx.Editor
 
 		private IMGUIContainer assetListContainer;
 
-		private Texture hoveredIcon;
+		internal Texture HoveredIcon;
 
 		#endregion
-
-		public class ColumnContext
-		{
-			private readonly string propertyName;
-			private readonly Action<Rect, SerializedProperty> onGUI;
-
-			public enum GUIType
-			{
-				Property
-			}
-
-			public ColumnContext(string propertyName, string iconPropertyName, AssetListWindow window)
-			{
-				this.propertyName = propertyName;
-				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window);
-			}
-
-			public ColumnContext(string propertyName, GUIType guiType)
-			{
-				this.propertyName = propertyName;
-				switch (guiType)
-				{
-					case GUIType.Property:
-						onGUI = Property;
-						break;
-					default:
-						throw new ArgumentOutOfRangeException(nameof(guiType), guiType, null);
-				}
-			}
-
-			public void OnGUI(Rect cellRect, SerializedProperty @object) => onGUI?.Invoke(cellRect, @object);
-
-			public SerializedProperty GetValue(SerializedObject context) => context.FindProperty(propertyName);
-
-			public object GetSortableValue(SerializedObject context)
-			{
-				SerializedProperty property = GetValue(context);
-				return AssetListUtility.GetSortableValue(property);
-			}
-
-			public void DoTint()
-			{
-				/*EditorGUI.DrawRect(args.rowRect, new Color(1f, 0f, 0f, 0.15f));
-				EditorGUI.DrawRect(args.rowRect, new Color(0f, 0.5f, 1f, 0.15f));
-				Color color = GUI.color;
-				color.a *= 0.3f;
-				GUI.color = color;*/
-			}
-
-			private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, true);
-
-			private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName, AssetListWindow window)
-			{
-				Object target = p.serializedObject.targetObject;
-				if (!(target is Texture texture))
-				{
-					if (target is Sprite sprite)
-						texture = sprite.texture;
-					else
-					{
-						if (string.IsNullOrEmpty(iconPropertyName))
-							texture = null;
-						else
-						{
-							SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
-							if (iconProperty == null)
-								texture = null;
-							else
-							{
-								Object obj = iconProperty.objectReferenceValue;
-								if (obj != null)
-								{
-									texture = obj as Texture;
-									if (texture == null)
-										texture = (obj as Sprite)?.texture;
-								}
-								else
-								{
-									texture = null;
-								}
-							}
-						}
-					}
-				}
-
-				Event e = Event.current;
-
-				if (texture != null)
-				{
-					float h = r.height - 2;
-					AssetListUtility.DrawTextureInRect(new Rect(r.x + 10, r.y + 1, h, h), texture);
-					if (r.Contains(e.mousePosition) && focusedWindow == window)
-						window.hoveredIcon = texture;
-				}
-
-				GUI.Label(
-					new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height),
-					target.name);
-				if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
-					EditorGUIUtility.PingObject(target);
-			}
-		}
 
 		[MenuItem("Window/Vertx/Asset List")]
 		public static void OpenWindow()
@@ -262,10 +160,46 @@ namespace Vertx.Editor
 						headerContent = new GUIContent(c.Title)
 					});
 
-					contexts.Add(new ColumnContext(
-						c.PropertyPath,
-						ColumnContext.GUIType.Property
-					));
+					switch (c.PropertyType)
+					{
+						case SerializedPropertyType.Float:
+						case SerializedPropertyType.Integer:
+							contexts.Add(new ColumnContext(
+								c.PropertyPath,
+								c.NumericalDisplay
+							));
+							break;
+						case SerializedPropertyType.Generic:
+						case SerializedPropertyType.Boolean:
+						case SerializedPropertyType.String:
+						case SerializedPropertyType.Color:
+						case SerializedPropertyType.ObjectReference:
+						case SerializedPropertyType.LayerMask:
+						case SerializedPropertyType.Enum:
+						case SerializedPropertyType.Vector2:
+						case SerializedPropertyType.Vector3:
+						case SerializedPropertyType.Vector4:
+						case SerializedPropertyType.Rect:
+						case SerializedPropertyType.ArraySize:
+						case SerializedPropertyType.Character:
+						case SerializedPropertyType.AnimationCurve:
+						case SerializedPropertyType.Bounds:
+						case SerializedPropertyType.Gradient:
+						case SerializedPropertyType.Quaternion:
+						case SerializedPropertyType.ExposedReference:
+						case SerializedPropertyType.FixedBufferSize:
+						case SerializedPropertyType.Vector2Int:
+						case SerializedPropertyType.Vector3Int:
+						case SerializedPropertyType.RectInt:
+						case SerializedPropertyType.BoundsInt:
+						case SerializedPropertyType.ManagedReference:
+						default:
+							contexts.Add(new ColumnContext(
+								c.PropertyPath,
+								GUIType.Property
+							));
+							break;
+					}
 				}
 			}
 
@@ -278,12 +212,12 @@ namespace Vertx.Editor
 			Rect rect = assetListContainer.contentRect;
 			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
 
-			if (hoveredIcon != null)
+			if (HoveredIcon != null)
 			{
 				float scale = Mathf.Min(position.width, position.height) / 2f;
 				float scaleHalf = scale / 2f;
-				AssetListUtility.DrawTextureInRect(new Rect(position.width / 2f - scaleHalf, position.height / 2f - scaleHalf, scale, scale), hoveredIcon);
-				hoveredIcon = null;
+				AssetListUtility.DrawTextureInRect(new Rect(position.width / 2f - scaleHalf, position.height / 2f - scaleHalf, scale, scale), HoveredIcon);
+				HoveredIcon = null;
 				Repaint();
 			}
 			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax && focusedWindow == this)

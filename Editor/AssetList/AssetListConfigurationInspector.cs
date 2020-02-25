@@ -28,7 +28,6 @@ namespace Vertx.Editor
 		private ReorderableList reorderableList;
 
 		private readonly GUIContent
-			nameLabel = new GUIContent("Name"),
 			iconLabel = new GUIContent("Icon"),
 			findIconLabel = new GUIContent("Find Icon Property"),
 			columnsLabel = new GUIContent("Columns"),
@@ -52,6 +51,8 @@ namespace Vertx.Editor
 
 		private readonly GUILayoutOption[] singleHeight = {GUILayout.Height(EditorGUIUtility.singleLineHeight)};
 
+		private RectOffset backgroundOffset;
+
 		protected override void OnEnable()
 		{
 			base.OnEnable();
@@ -67,20 +68,91 @@ namespace Vertx.Editor
 			typeIsTextureOrSprite = typeof(Texture).IsAssignableFrom(type) || typeof(Sprite).IsAssignableFrom(type);
 			typeIsAsset = !type.IsSubclassOf(typeof(Component));
 
+			backgroundOffset = new RectOffset(20, 6, 2, 0);
 			reorderableList = new ReorderableList(serializedObject, columns)
 			{
 				drawElementCallback = (rect, index, active, focused) =>
 				{
+					if (index % 2 == 0)
+						EditorGUI.DrawRect(backgroundOffset.Add(rect), new Color(0f, 0f, 0f, 0.075f));
 					SerializedProperty column = columns.GetArrayElementAtIndex(index);
 					SerializedProperty propertyPath = column.FindPropertyRelative("PropertyPath");
 					SerializedProperty title = column.FindPropertyRelative("Title");
 					rect.height = EditorGUIUtility.singleLineHeight;
 					EditorGUI.PropertyField(rect, title);
 					rect.NextGUIRect();
-					EditorGUI.PropertyField(rect, propertyPath);
+					using (new EditorGUI.DisabledScope(true))
+						EditorGUI.PropertyField(rect, propertyPath);
+
+					var propertyType = (SerializedPropertyType) column.FindPropertyRelative("PropertyType").intValue;
+
+					string propertyName = null;
+					switch (propertyType)
+					{
+						case SerializedPropertyType.Generic:
+							break;
+						case SerializedPropertyType.Integer:
+						case SerializedPropertyType.Float:
+							propertyName = "NumericalDisplay";
+							break;
+						case SerializedPropertyType.Boolean:
+							break;
+						case SerializedPropertyType.String:
+							break;
+						case SerializedPropertyType.Color:
+							break;
+						case SerializedPropertyType.ObjectReference:
+							break;
+						case SerializedPropertyType.LayerMask:
+							break;
+						case SerializedPropertyType.Enum:
+							break;
+						case SerializedPropertyType.Vector2:
+							break;
+						case SerializedPropertyType.Vector3:
+							break;
+						case SerializedPropertyType.Vector4:
+							break;
+						case SerializedPropertyType.Rect:
+							break;
+						case SerializedPropertyType.ArraySize:
+							break;
+						case SerializedPropertyType.Character:
+							break;
+						case SerializedPropertyType.AnimationCurve:
+							break;
+						case SerializedPropertyType.Bounds:
+							break;
+						case SerializedPropertyType.Gradient:
+							break;
+						case SerializedPropertyType.Quaternion:
+							break;
+						case SerializedPropertyType.ExposedReference:
+							break;
+						case SerializedPropertyType.FixedBufferSize:
+							break;
+						case SerializedPropertyType.Vector2Int:
+							break;
+						case SerializedPropertyType.Vector3Int:
+							break;
+						case SerializedPropertyType.RectInt:
+							break;
+						case SerializedPropertyType.BoundsInt:
+							break;
+						case SerializedPropertyType.ManagedReference:
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+
+					if (propertyName != null)
+					{
+						rect.NextGUIRect();
+						EditorGUI.PropertyField(rect, column.FindPropertyRelative(propertyName));
+					}
 				},
-				drawHeaderCallback = rect => GUI.Label(rect, columnsLabel),
-				elementHeight = EditorGUIExtensions.HeightWithSpacing * 2,
+				headerHeight = 0,
+				elementHeight = EditorGUIExtensions.HeightWithSpacing * 3,
 				displayAdd = false
 			};
 
@@ -119,24 +191,35 @@ namespace Vertx.Editor
 				}
 			}
 
-			using (new EditorGUIExtensions.ContainerScope(nameLabel))
+			GUILayout.Space(8);
+
+			using (new EditorGUIExtensions.ContainerScope(columnsLabel, -2))
+			using (new EditorGUIExtensions.OutlineScope(false, false))
 			{
-				GUILayout.Label(iconLabel, EditorStyles.boldLabel);
+				GUILayout.Label(iconLabel, EditorStyles.miniLabel);
+
 				if (typeIsTextureOrSprite)
 					EditorGUILayout.HelpBox("Type inherits from Texture or Sprite. Icon is automated.", MessageType.Info);
 				else
 				{
 					if (!string.IsNullOrEmpty(iconPropertyPath.stringValue))
-						EditorGUILayout.PropertyField(iconPropertyPath);
+						EditorGUILayout.PropertyField(iconPropertyPath, GUIContent.none);
 					if (ValidateReferenceObjectWithHelpWarning())
 					{
 						Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+						rect.xMin += EditorGUI.indentLevel * 15;
 						if (GUI.Button(rect, findIconLabel))
 						{
 							CreateIconPropertyDropdown();
 							iconPropertyDropdown?.Show(rect);
 						}
 					}
+				}
+
+				using (new EditorGUI.DisabledScope(true))
+				{
+					EditorGUILayout.TextField("Title", "Name");
+					EditorGUILayout.TextField("Property Path", "m_Name");
 				}
 			}
 
@@ -173,9 +256,13 @@ namespace Vertx.Editor
 			}
 
 			HashSet<string> propertyPaths = new HashSet<string>();
+			Dictionary<string, SerializedPropertyType> typeLookup = new Dictionary<string, SerializedPropertyType>();
 			var iterator = new ScriptableObjectIterator(referenceObject);
 			foreach (SerializedProperty prop in iterator)
+			{
 				propertyPaths.Add(prop.propertyPath);
+				typeLookup.Add(prop.propertyPath, prop.propertyType);
+			}
 
 			if (propertyDropdownState == null)
 				propertyDropdownState = new AdvancedDropdownState();
@@ -185,6 +272,7 @@ namespace Vertx.Editor
 				SerializedProperty column = columns.GetArrayElementAtIndex(columns.arraySize++);
 				column.FindPropertyRelative("PropertyPath").stringValue = propPath;
 				column.FindPropertyRelative("Title").stringValue = ObjectNames.NicifyVariableName(propPath);
+				column.FindPropertyRelative("PropertyType").intValue = (int) typeLookup[propPath];
 				serializedObject.ApplyModifiedProperties();
 			}, propertyPaths);
 		}
@@ -220,7 +308,7 @@ namespace Vertx.Editor
 			{
 				if (prop.propertyType != SerializedPropertyType.ObjectReference)
 					continue;
-				
+
 				if (prop.objectReferenceValue != null)
 				{
 					Type propType = prop.objectReferenceValue.GetType();
@@ -262,13 +350,12 @@ namespace Vertx.Editor
 
 		private class ScriptableObjectIterator : IEnumerable<SerializedProperty>
 		{
-			private readonly Object referenceObject;
+			private readonly SerializedObject serializedObject;
 
-			public ScriptableObjectIterator(Object referenceObject) => this.referenceObject = referenceObject;
+			public ScriptableObjectIterator(Object referenceObject) => serializedObject = new SerializedObject(referenceObject);
 
 			public IEnumerator<SerializedProperty> GetEnumerator()
 			{
-				SerializedObject serializedObject = new SerializedObject(referenceObject);
 				typeof(SerializedObject).GetProperty("inspectorMode", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(serializedObject, 1);
 				SerializedProperty prop = serializedObject.GetIterator();
 				while (prop.NextVisible(true))
