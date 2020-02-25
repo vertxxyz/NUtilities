@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -16,7 +16,7 @@ namespace Vertx.Editor
 	public class AssetListConfigurationInspector : ScriptableObjectInspector
 	{
 		private Type type;
-		private bool typeIsTexture;
+		private bool typeIsTextureOrSprite;
 		private bool typeIsAsset = true;
 
 		private SerializedProperty
@@ -41,9 +41,10 @@ namespace Vertx.Editor
 		private AdvancedDropdownState propertyDropdownState;
 
 		private PropertyDropdown propertyDropdown;
-		
+
 		[SerializeField]
 		private AdvancedDropdownState iconPropertyDropdownState;
+
 		private PropertyDropdown iconPropertyDropdown;
 
 		[SerializeField]
@@ -64,7 +65,7 @@ namespace Vertx.Editor
 			if (type == null) return;
 
 			//TODO handles Sprites.
-			typeIsTexture = type.IsSubclassOf(typeof(Texture));
+			typeIsTextureOrSprite = typeof(Texture).IsAssignableFrom(type) || typeof(Sprite).IsAssignableFrom(type);
 			typeIsAsset = !type.IsSubclassOf(typeof(Component));
 
 			reorderableList = new ReorderableList(serializedObject, columns)
@@ -108,7 +109,7 @@ namespace Vertx.Editor
 					assetType.intValue = 0;
 				EditorGUILayout.PropertyField(assetType);
 			}
-			
+
 			using (var cCS = new EditorGUI.ChangeCheckScope())
 			{
 				referenceObject = EditorGUILayout.ObjectField(referenceObjectLabel, referenceObject, type, true, singleHeight);
@@ -122,8 +123,8 @@ namespace Vertx.Editor
 			using (new EditorGUIExtensions.ContainerScope(nameLabel))
 			{
 				GUILayout.Label(iconLabel, EditorStyles.boldLabel);
-				if (typeIsTexture)
-					EditorGUILayout.HelpBox("Type inherits from Texture. Icon is automated.", MessageType.Info);
+				if (typeIsTextureOrSprite)
+					EditorGUILayout.HelpBox("Type inherits from Texture or Sprite. Icon is automated.", MessageType.Info);
 				else
 				{
 					if (!string.IsNullOrEmpty(iconPropertyPath.stringValue))
@@ -134,7 +135,7 @@ namespace Vertx.Editor
 						if (GUI.Button(rect, findIconLabel))
 						{
 							CreateIconPropertyDropdown();
-							iconPropertyDropdown.Show(rect);
+							iconPropertyDropdown?.Show(rect);
 						}
 					}
 				}
@@ -145,7 +146,8 @@ namespace Vertx.Editor
 			using (new EditorGUIExtensions.OutlineScope())
 			{
 				GUILayout.Label(searchlabel, EditorStyles.boldLabel);
-				if (ValidateReferenceObjectWithHelpWarning()) {
+				if (ValidateReferenceObjectWithHelpWarning())
+				{
 					Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
 					if (GUI.Button(rect, addLabel))
 						propertyDropdown.Show(rect);
@@ -162,7 +164,7 @@ namespace Vertx.Editor
 			EditorGUILayout.HelpBox("A reference Object is required to search for Serialized Properties.", MessageType.Warning);
 			return false;
 		}
-		
+
 		void CreatePropertyDropdown()
 		{
 			if (referenceObject == null)
@@ -178,7 +180,7 @@ namespace Vertx.Editor
 
 			if (propertyDropdownState == null)
 				propertyDropdownState = new AdvancedDropdownState();
-			
+
 			propertyDropdown = new PropertyDropdown(propertyDropdownState, propPath =>
 			{
 				SerializedProperty column = columns.GetArrayElementAtIndex(columns.arraySize++);
@@ -195,34 +197,69 @@ namespace Vertx.Editor
 				Debug.LogError("Reference Object is null. Lookup cannot be created");
 				return;
 			}
-			
+
 			HashSet<string> iconPropertyPaths = new HashSet<string>();
 			var iterator = new ScriptableObjectIterator(referenceObject);
 			Type texType = typeof(Texture);
+			Type spriteType = typeof(Sprite);
+
+			List<string> typeStrings = new List<string>
+			{
+				$"PPtr<{nameof(Texture)}>",
+				$"PPtr<{nameof(Sprite)}>"
+			};
+			typeStrings.AddRange(
+				TypeCache.GetTypesDerivedFrom(texType)
+					.Select(type1 => $"PPtr<{type1.Name.Replace("UnityEngine.", string.Empty)}>")
+			);
+			typeStrings.AddRange(
+				TypeCache.GetTypesDerivedFrom(spriteType)
+					.Select(type1 => $"PPtr<{type1.Name.Replace("UnityEngine.", string.Empty)}>")
+			);
+
 			foreach (SerializedProperty prop in iterator)
 			{
 				if (prop.propertyType == SerializedPropertyType.ObjectReference)
 				{
 					//TODO handles Sprites.
-					if (prop.objectReferenceValue != null && prop.objectReferenceValue.GetType().IsSubclassOf(texType))
-						iconPropertyPaths.Add(prop.propertyPath);
-					else
+					if (prop.objectReferenceValue != null)
 					{
-						var t = Type.GetType(prop.type);
-						if(t != null && t.IsSubclassOf(texType))
+						Type propType = prop.objectReferenceValue.GetType();
+						if (texType.IsAssignableFrom(propType) || spriteType.IsAssignableFrom(propType))
+						{
 							iconPropertyPaths.Add(prop.propertyPath);
+							continue;
+						}
 					}
+
+					if (typeStrings.Contains(prop.type))
+						iconPropertyPaths.Add(prop.propertyPath);
 				}
 			}
-			
-			if(iconPropertyDropdownState == null)
+
+			iconPropertyDropdown = null;
+
+			switch (iconPropertyPaths.Count)
+			{
+				case 0:
+					Debug.LogError("No appropriate property paths found.");
+					return;
+				case 1:
+					Debug.Log("Only one appropriate property path found. It has been automatically assigned.");
+					AssignPropPath(iconPropertyPaths.First());
+					return;
+			}
+
+			if (iconPropertyDropdownState == null)
 				iconPropertyDropdownState = new AdvancedDropdownState();
 
-			iconPropertyDropdown = new PropertyDropdown(iconPropertyDropdownState, propPath =>
+			iconPropertyDropdown = new PropertyDropdown(iconPropertyDropdownState, AssignPropPath, iconPropertyPaths);
+
+			void AssignPropPath(string propPath)
 			{
 				iconPropertyPath.stringValue = propPath;
 				serializedObject.ApplyModifiedProperties();
-			}, iconPropertyPaths);
+			}
 		}
 
 		private class ScriptableObjectIterator : IEnumerable<SerializedProperty>
@@ -268,6 +305,14 @@ namespace Vertx.Editor
 				itemSelected.Invoke(propPath);
 			}
 
+			private static string GetName(string path)
+			{
+				int indexOfSeparator = path.LastIndexOf('/');
+				if (indexOfSeparator < 0 || indexOfSeparator == path.Length - 1)
+					return path;
+				return path.Substring(indexOfSeparator + 1);
+			}
+
 			protected override AdvancedDropdownItem BuildRoot()
 			{
 				pathLookup.Clear();
@@ -280,7 +325,7 @@ namespace Vertx.Editor
 				{
 					var path = propertyPath;
 					AdvancedDropdownItem dropdownItem = root;
-					string name = Path.GetFileName(path);
+					string name = GetName(path);
 
 					//If there is a path attribute
 					if (!string.IsNullOrEmpty(path))

@@ -88,12 +88,27 @@ namespace Vertx.Editor
 				Object target = p.serializedObject.targetObject;
 				if (!(target is Texture texture))
 				{
-					if (string.IsNullOrEmpty(iconPropertyName))
-						texture = null;
+					if (target is Sprite sprite)
+						texture = sprite.texture;
 					else
 					{
-						SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
-						texture = iconProperty.objectReferenceValue as Texture;
+						if (string.IsNullOrEmpty(iconPropertyName))
+							texture = null;
+						else
+						{
+							SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
+							Object obj = iconProperty.objectReferenceValue;
+							if (obj != null)
+							{
+								texture = obj as Texture;
+								if (texture == null)
+									texture = (obj as Sprite)?.texture;
+							}
+							else
+							{
+								texture = null;
+							}
+						}
 					}
 				}
 				Event e = Event.current;

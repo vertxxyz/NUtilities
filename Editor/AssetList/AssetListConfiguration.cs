@@ -17,7 +17,7 @@ namespace Vertx.Editor
 		private AssetType assetType = AssetType.InSceneAndAssets;
 
 		public AssetType AssetContext => assetType;
-		
+
 		[Serializable]
 		internal class ColumnConfiguration
 		{
@@ -45,9 +45,7 @@ namespace Vertx.Editor
 		{
 			Type type = target.GetType();
 			typeString = type.AssemblyQualifiedName;
-			assetType = type.IsSubclassOf(typeof(Component)) ?
-				AssetType.InSceneAndAssets :
-				AssetType.InAssets;
+			assetType = type.IsSubclassOf(typeof(Component)) ? AssetType.InSceneAndAssets : AssetType.InAssets;
 		}
 	}
 }

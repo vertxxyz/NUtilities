@@ -79,7 +79,7 @@ namespace Vertx.Editor
 
 			foreach (string guid in guids)
 			{
-				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
+				var asset = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), type);
 				if (asset != null)
 					return asset;
 			}
