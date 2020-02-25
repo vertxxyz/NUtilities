@@ -5,7 +5,8 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace Vertx.Editor {
+namespace Vertx.Editor
+{
 	[CustomPropertyDrawer(typeof(EnumFlagsAttribute))]
 	public class EnumFlagsDrawer : PropertyDrawer
 	{

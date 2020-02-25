@@ -64,7 +64,6 @@ namespace Vertx.Editor
 
 			if (type == null) return;
 
-			//TODO handles Sprites.
 			typeIsTextureOrSprite = typeof(Texture).IsAssignableFrom(type) || typeof(Sprite).IsAssignableFrom(type);
 			typeIsAsset = !type.IsSubclassOf(typeof(Component));
 
@@ -219,22 +218,21 @@ namespace Vertx.Editor
 
 			foreach (SerializedProperty prop in iterator)
 			{
-				if (prop.propertyType == SerializedPropertyType.ObjectReference)
+				if (prop.propertyType != SerializedPropertyType.ObjectReference)
+					continue;
+				
+				if (prop.objectReferenceValue != null)
 				{
-					//TODO handles Sprites.
-					if (prop.objectReferenceValue != null)
+					Type propType = prop.objectReferenceValue.GetType();
+					if (texType.IsAssignableFrom(propType) || spriteType.IsAssignableFrom(propType))
 					{
-						Type propType = prop.objectReferenceValue.GetType();
-						if (texType.IsAssignableFrom(propType) || spriteType.IsAssignableFrom(propType))
-						{
-							iconPropertyPaths.Add(prop.propertyPath);
-							continue;
-						}
-					}
-
-					if (typeStrings.Contains(prop.type))
 						iconPropertyPaths.Add(prop.propertyPath);
+						continue;
+					}
 				}
+
+				if (typeStrings.Contains(prop.type))
+					iconPropertyPaths.Add(prop.propertyPath);
 			}
 
 			iconPropertyDropdown = null;

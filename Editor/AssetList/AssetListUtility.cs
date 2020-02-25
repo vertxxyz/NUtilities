@@ -86,7 +86,7 @@ namespace Vertx.Editor
 
 			return null;
 		}
-		
+
 		public static List<Object> LoadAssetsByTypeName(
 			string assemblyQualifiedName,
 			out Type type,

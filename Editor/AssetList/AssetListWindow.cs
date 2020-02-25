@@ -19,10 +19,10 @@ namespace Vertx.Editor
 		[SerializeField] private AssetListConfiguration configuration;
 		private Type type;
 		private bool isComponent;
-		
+
 		private List<Object> objects;
 		private List<ColumnContext> columnContexts;
-		
+
 		private MultiColumnTreeView treeView;
 		[SerializeField] TreeViewState treeViewState;
 		[SerializeField] MultiColumnHeaderState multiColumnHeaderState;
@@ -30,7 +30,7 @@ namespace Vertx.Editor
 		private IMGUIContainer assetListContainer;
 
 		private Texture hoveredIcon;
-		
+
 		#endregion
 
 		public class ColumnContext
@@ -48,7 +48,7 @@ namespace Vertx.Editor
 				this.propertyName = propertyName;
 				onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window);
 			}
-			
+
 			public ColumnContext(string propertyName, GUIType guiType)
 			{
 				this.propertyName = propertyName;
@@ -111,8 +111,9 @@ namespace Vertx.Editor
 						}
 					}
 				}
+
 				Event e = Event.current;
-				
+
 				if (texture != null)
 				{
 					float h = r.height - 2;
@@ -120,7 +121,7 @@ namespace Vertx.Editor
 					if (r.Contains(e.mousePosition) && focusedWindow == window)
 						window.hoveredIcon = texture;
 				}
-				
+
 				GUI.Label(
 					new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height),
 					target.name);
@@ -146,7 +147,7 @@ namespace Vertx.Editor
 
 		private void OnEnable()
 		{
-			if(configuration == null)
+			if (configuration == null)
 				InitialiseWithoutConfiguration();
 			else
 				InitialiseWithConfiguration(configuration);
@@ -155,13 +156,13 @@ namespace Vertx.Editor
 		private void InitialiseWithoutConfiguration()
 		{
 			rootVisualElement.Clear();
-			
+
 			VisualTreeAsset uxml = StyleExtensions.GetUXML("BlankAssetList");
 			uxml.CloneTree(rootVisualElement);
 			rootVisualElement.Q<DragAndDropBox>("DropTarget").RegisterSingle(CreateNewWindow);
 			var container = rootVisualElement.Q<VisualElement>("ListViewContainer");
 			AssetListConfiguration[] configurations = EditorUtils.LoadAssetsOfType<AssetListConfiguration>();
-			if(configurations.Length == 0)
+			if (configurations.Length == 0)
 				container.RemoveFromHierarchy();
 			else
 			{
@@ -188,17 +189,17 @@ namespace Vertx.Editor
 				InitialiseWithConfiguration(listConfiguration);
 			}
 		}
-		
+
 		internal void InitialiseWithConfiguration(AssetListConfiguration configuration)
 		{
 			rootVisualElement.Clear();
-			
+
 			this.configuration = configuration;
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
-			
+
 			if (treeViewState == null)
 				treeViewState = new TreeViewState();
-			
+
 			bool firstInit = multiColumnHeaderState == null;
 			var headerState = new MultiColumnHeaderState(GetColumnsFromConfiguration(configuration));
 			if (MultiColumnHeaderState.CanOverwriteSerializedFields(multiColumnHeaderState, headerState))
@@ -209,7 +210,7 @@ namespace Vertx.Editor
 			var multiColumnHeader = new MultiColumnHeader(headerState);
 			if (firstInit)
 				multiColumnHeader.ResizeToFit();
-			
+
 			treeView = new MultiColumnTreeView(treeViewState, multiColumnHeader, this);
 
 			(StyleSheet styleSheet, VisualTreeAsset uxml) = StyleExtensions.GetStyleSheetAndUXML("AssetList");
@@ -218,13 +219,12 @@ namespace Vertx.Editor
 
 			var toolbarSearchField = rootVisualElement.Q<ToolbarSearchField>("SearchField");
 			string searchString = treeView.searchString;
-			if(searchString != null)
+			if (searchString != null)
 				toolbarSearchField.SetValueWithoutNotify(treeView.searchString);
 			toolbarSearchField.RegisterValueChangedCallback(evt => treeView.searchString = evt.newValue);
 
 			assetListContainer = rootVisualElement.Q<IMGUIContainer>("AssetList");
 			assetListContainer.onGUIHandler = MultiColumnListGUI;
-
 		}
 
 		private MultiColumnHeaderState.Column[] GetColumnsFromConfiguration(AssetListConfiguration configuration)
@@ -257,7 +257,7 @@ namespace Vertx.Editor
 					});
 
 					contexts.Add(new ColumnContext(
-						c.Title,
+						c.PropertyPath,
 						ColumnContext.GUIType.Property
 					));
 				}
@@ -271,7 +271,7 @@ namespace Vertx.Editor
 		{
 			Rect rect = assetListContainer.contentRect;
 			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
-			
+
 			if (hoveredIcon != null)
 			{
 				float scale = Mathf.Min(position.width, position.height) / 2f;
@@ -283,7 +283,7 @@ namespace Vertx.Editor
 			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax && focusedWindow == this)
 				Repaint();
 		}
-		
+
 		protected class MultiColumnTreeView : TreeView
 		{
 			private readonly AssetListWindow window;
@@ -326,7 +326,7 @@ namespace Vertx.Editor
 					bool ascending = multiColumnHeader.IsSortedAscending(i);
 					ColumnContext columnContext = window.columnContexts[i];
 					initialOrder = count++ == 0 ? OrderFirst() : OrderSubsequent(initialOrder);
-					
+
 					IOrderedEnumerable<TQuery> Order<TQuery, TKey>
 						(IEnumerable<TQuery> source, Func<TQuery, TKey> selector) =>
 						ascending ? source.OrderBy(selector) : source.OrderByDescending(selector);
@@ -336,7 +336,7 @@ namespace Vertx.Editor
 						ascending ? source.ThenBy(selector) : source.ThenByDescending(selector);
 
 					IOrderedEnumerable<Object> OrderFirst() =>
-						Order(allObjects, o=> columnContext.GetSortableValue(GetSerializedObject(o)));
+						Order(allObjects, o => columnContext.GetSortableValue(GetSerializedObject(o)));
 
 					IOrderedEnumerable<Object> OrderSubsequent(IOrderedEnumerable<Object> collection)
 						=> ThenBy(collection, o => columnContext.GetSortableValue(GetSerializedObject(o)));
@@ -353,16 +353,17 @@ namespace Vertx.Editor
 			protected override void RowGUI(RowGUIArgs args)
 			{
 				TreeViewItem item = args.item;
+				SerializedObject serializedObject = GetSerializedObject(allObjects[item.id]);
 				for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
 				{
 					Rect cellRect = args.GetCellRect(i);
-					CellGUI(cellRect, item, args.GetColumn(i), ref args);
+					CellGUI(cellRect, item, serializedObject, args.GetColumn(i), ref args);
 				}
 
 				GUI.color = Color.white;
 			}
-			
-			private void CellGUI(Rect cellRect, TreeViewItem treeContentValue, int columnIndex, ref RowGUIArgs args)
+
+			private void CellGUI(Rect cellRect, TreeViewItem treeContentValue, SerializedObject serializedObject, int columnIndex, ref RowGUIArgs args)
 			{
 				ColumnContext columnContext = window.columnContexts[columnIndex];
 				if (columnContext == null)
@@ -370,8 +371,14 @@ namespace Vertx.Editor
 					Reload();
 					return;
 				}
-				
-				columnContext.OnGUI(cellRect, columnContext.GetValue(GetSerializedObject(allObjects[treeContentValue.id])));
+
+				SerializedProperty property = columnContext.GetValue(serializedObject);
+				if (property == null)
+				{
+					Debug.LogError($"Property returned from column context {multiColumnHeader.GetColumn(columnIndex).headerContent.text} was null.\n(Target Object: {serializedObject.targetObject})");
+					return;
+				}
+				columnContext.OnGUI(cellRect, property);
 			}
 
 

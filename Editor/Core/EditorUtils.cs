@@ -8,14 +8,15 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
-namespace Vertx.Extensions {
-	public static class EditorUtils {
-
+namespace Vertx.Extensions
+{
+	public static class EditorUtils
+	{
 		#region Assets
-		
+
 		public static Object LoadAssetOfType(Type type)
 		{
-			if(!TryGetGUIDs(out var guids, type))
+			if (!TryGetGUIDs(out var guids, type))
 				return null;
 			foreach (string guid in guids)
 			{
@@ -26,10 +27,10 @@ namespace Vertx.Extensions {
 
 			return null;
 		}
-		
+
 		public static T LoadAssetOfType<T>() where T : Object
 		{
-			if(!TryGetGUIDs(out var guids, typeof(T)))
+			if (!TryGetGUIDs(out var guids, typeof(T)))
 				return null;
 			foreach (string guid in guids)
 			{
@@ -43,14 +44,14 @@ namespace Vertx.Extensions {
 
 		public static T[] LoadAssetsOfType<T>() where T : Object
 		{
-			if(!TryGetGUIDs(out var guids, typeof(T)))
+			if (!TryGetGUIDs(out var guids, typeof(T)))
 				return Array.Empty<T>();
 
 			List<T> values = new List<T>();
 			foreach (string guid in guids)
 			{
 				var asset = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
-				if(asset != null)
+				if (asset != null)
 					values.Add(asset);
 			}
 
@@ -66,12 +67,14 @@ namespace Vertx.Extensions {
 				if (guids.Length == 0)
 					return false;
 			}
+
 			return true;
 		}
 
 		#endregion
-		
+
 		#region Folders
+
 		public static void ShowFolderContents(int folderInstanceId, bool revealAndFrameInFolderTree)
 		{
 			Type tProjectBrowser = Type.GetType("UnityEditor.ProjectBrowser,UnityEditor");
@@ -81,7 +84,7 @@ namespace Vertx.Extensions {
 			if (browser != null)
 				showContentsMethod.Invoke(browser, new object[] {folderInstanceId, revealAndFrameInFolderTree});
 		}
-	
+
 		public static int GetMainAssetInstanceID(string path)
 		{
 			object idObject = typeof(AssetDatabase).GetMethod("GetMainAssetInstanceID", BindingFlags.NonPublic | BindingFlags.Static)?.Invoke(null, new object[] {path});
@@ -94,17 +97,19 @@ namespace Vertx.Extensions {
 			if (o == null)
 				return;
 
-			string path = AssetDatabase.GetAssetPath (o);
+			string path = AssetDatabase.GetAssetPath(o);
 			if (Path.GetFileName(path).Contains("."))
-				return; 	//DefaultAsset is a file.
+				return; //DefaultAsset is a file.
 			ShowFolderContents(
 				GetMainAssetInstanceID(AssetDatabase.GUIDToAssetPath(AssetDatabase.AssetPathToGUID(path))), true
 			);
 			EditorWindow.GetWindow(Type.GetType("UnityEditor.ProjectBrowser,UnityEditor")).Repaint();
 		}
+
 		#endregion
-		
+
 		#region Editor Extensions
+
 		/// <summary>
 		/// Returns instances of the types inherited from Type T
 		/// </summary>
@@ -115,7 +120,7 @@ namespace Vertx.Extensions {
 			IEnumerable<Type> derivedTypes = TypeCache.GetTypesDerivedFrom<T>();
 			return derivedTypes.Select(t => (T) Activator.CreateInstance(t)).ToList();
 		}
-		
+
 		/// <summary>
 		/// Returns instances of the types inherited from Type T, casted to type TConverted
 		/// </summary>
@@ -127,10 +132,11 @@ namespace Vertx.Extensions {
 			IEnumerable<Type> derivedTypes = TypeCache.GetTypesDerivedFrom(type);
 			return derivedTypes.Select(t => (TConverted) Activator.CreateInstance(t)).ToList();
 		}
+
 		#endregion
 
 		#region Property Extensions
-		
+
 		private static readonly Dictionary<string, (Type, FieldInfo)> baseTypeLookup = new Dictionary<string, (Type, FieldInfo)>();
 
 		/// <summary>
@@ -155,7 +161,7 @@ namespace Vertx.Extensions {
 			foreach (var pathIterator in separatedPaths)
 			{
 				int index = -1;
-				string path = pathIterator; 
+				string path = pathIterator;
 				if (path.EndsWith("]"))
 				{
 					int startIndex = path.IndexOf('[') + 1;
@@ -163,7 +169,7 @@ namespace Vertx.Extensions {
 					index = int.Parse(path.Substring(startIndex, length));
 					path = path.Substring(0, startIndex - 1);
 				}
-					
+
 				fieldInfo = type.GetField(path, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 				//Walk up the type tree to find the field in question
 				if (fieldInfo == null)
@@ -183,7 +189,7 @@ namespace Vertx.Extensions {
 				@object = fieldInfo.GetValue(@object);
 
 				if (type.IsArray)
-				{					
+				{
 					if (index >= 0)
 					{
 						parent = @object;
@@ -199,6 +205,7 @@ namespace Vertx.Extensions {
 					}
 					else
 						return @object;
+
 					type = @object?.GetType();
 				}
 				else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
@@ -218,6 +225,7 @@ namespace Vertx.Extensions {
 					}
 					else
 						return @object;
+
 					type = @object?.GetType();
 				}
 			}
