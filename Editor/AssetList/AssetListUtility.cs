@@ -163,9 +163,11 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Float:
 					return property.floatValue;
 				case SerializedPropertyType.String:
+					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
+						return property.serializedObject.targetObject.name;
 					return property.stringValue;
 				case SerializedPropertyType.ObjectReference:
-					return property.objectReferenceValue.name;
+					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
 				case SerializedPropertyType.LayerMask:
 					return property.intValue;
 				case SerializedPropertyType.Enum:

@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 
 namespace Vertx.Editor
 {
-	internal class AssetListWindow : EditorWindow
+	internal class AssetListWindow : EditorWindow, IHasCustomMenu
 	{
 		#region Variables
 
@@ -97,16 +97,21 @@ namespace Vertx.Editor
 						else
 						{
 							SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
-							Object obj = iconProperty.objectReferenceValue;
-							if (obj != null)
-							{
-								texture = obj as Texture;
-								if (texture == null)
-									texture = (obj as Sprite)?.texture;
-							}
+							if (iconProperty == null)
+								texture = null;
 							else
 							{
-								texture = null;
+								Object obj = iconProperty.objectReferenceValue;
+								if (obj != null)
+								{
+									texture = obj as Texture;
+									if (texture == null)
+										texture = (obj as Sprite)?.texture;
+								}
+								else
+								{
+									texture = null;
+								}
 							}
 						}
 					}
@@ -195,6 +200,7 @@ namespace Vertx.Editor
 			rootVisualElement.Clear();
 
 			this.configuration = configuration;
+			titleContent = new GUIContent(configuration.name);
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
 
 			if (treeViewState == null)
@@ -290,6 +296,15 @@ namespace Vertx.Editor
 			private readonly Queue<int> sortQueue = new Queue<int>();
 			private List<Object> allObjects;
 			private readonly Dictionary<Object, SerializedObject> serializedObjectLookup = new Dictionary<Object, SerializedObject>();
+			
+			private readonly GUIContent missingPropertyLabel = new GUIContent("Property was not found.", "The property listed for this column was not present on this Object.");
+
+			private GUIStyle centeredMiniLabel;
+
+			private GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.miniLabel)
+			{
+				alignment = TextAnchor.MiddleCenter
+			});
 
 			public MultiColumnTreeView(TreeViewState state,
 				MultiColumnHeader multicolumnHeader, AssetListWindow window)
@@ -375,7 +390,8 @@ namespace Vertx.Editor
 				SerializedProperty property = columnContext.GetValue(serializedObject);
 				if (property == null)
 				{
-					Debug.LogError($"Property returned from column context {multiColumnHeader.GetColumn(columnIndex).headerContent.text} was null.\n(Target Object: {serializedObject.targetObject})");
+					EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
+					GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
 					return;
 				}
 				columnContext.OnGUI(cellRect, property);
@@ -395,6 +411,11 @@ namespace Vertx.Editor
 
 				return root;
 			}
+		}
+
+		public void AddItemsToMenu(GenericMenu menu)
+		{
+			menu.AddItem(new GUIContent("Refresh from Configuration asset."), false, OnEnable);
 		}
 	}
 }
