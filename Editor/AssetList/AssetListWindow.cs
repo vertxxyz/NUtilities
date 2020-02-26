@@ -97,6 +97,7 @@ namespace Vertx.Editor
 		{
 			rootVisualElement.Clear();
 
+			bool changedConfiguration = this.configuration != configuration;
 			this.configuration = configuration;
 			titleContent = new GUIContent(configuration.name);
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
@@ -104,16 +105,17 @@ namespace Vertx.Editor
 			if (treeViewState == null)
 				treeViewState = new TreeViewState();
 
-			bool firstInit = multiColumnHeaderState == null;
 			var headerState = new MultiColumnHeaderState(GetColumnsFromConfiguration(configuration));
 			if (MultiColumnHeaderState.CanOverwriteSerializedFields(multiColumnHeaderState, headerState))
 				MultiColumnHeaderState.OverwriteSerializedFields(multiColumnHeaderState, headerState);
 
-			multiColumnHeaderState = headerState;
+			if (changedConfiguration)
+			{
+				initialisedSizes = false;
+				multiColumnHeaderState = headerState;
+			}
 
 			var multiColumnHeader = new MultiColumnHeader(headerState);
-			if (firstInit)
-				multiColumnHeader.ResizeToFit();
 
 			treeView = new MultiColumnTreeView(treeViewState, multiColumnHeader, this);
 
@@ -155,11 +157,8 @@ namespace Vertx.Editor
 			{
 				foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
 				{
-					columns.Add(new MultiColumnHeaderState.Column
-					{
-						headerContent = new GUIContent(c.Title)
-					});
-
+					var columnTitleContent = new GUIContent(c.Title);
+					float minWidth;
 					switch (c.PropertyType)
 					{
 						case SerializedPropertyType.Float:
@@ -168,17 +167,27 @@ namespace Vertx.Editor
 								c.PropertyPath,
 								c.NumericalDisplay
 							));
+							switch (c.NumericalDisplay)
+							{
+								case NumericalPropertyDisplay.ReadonlyProgressBar:
+								case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+									minWidth = 150;
+									break;
+								default:
+									minWidth = 50;
+									break;
+							}
 							break;
-						case SerializedPropertyType.Generic:
-						case SerializedPropertyType.Boolean:
-						case SerializedPropertyType.String:
-							throw new NotImplementedException();
 						case SerializedPropertyType.Color:
+							minWidth = 150;
 							contexts.Add(new ColumnContext(
 								c.PropertyPath,
 								c.ColorDisplay
 								));
 							break;
+						case SerializedPropertyType.Generic:
+                        case SerializedPropertyType.Boolean:
+                        case SerializedPropertyType.String:
 						case SerializedPropertyType.ObjectReference:
 						case SerializedPropertyType.LayerMask:
 						case SerializedPropertyType.Enum:
@@ -200,12 +209,20 @@ namespace Vertx.Editor
 						case SerializedPropertyType.BoundsInt:
 						case SerializedPropertyType.ManagedReference:
 						default:
+							minWidth = 200;
 							contexts.Add(new ColumnContext(
 								c.PropertyPath,
 								GUIType.Property
 							));
 							break;
 					}
+					
+					columns.Add(new MultiColumnHeaderState.Column
+					{
+						headerContent = new GUIContent(columnTitleContent),
+						minWidth = minWidth,
+						autoResize = false
+					});
 				}
 			}
 
@@ -213,8 +230,25 @@ namespace Vertx.Editor
 			return columns.ToArray();
 		}
 
+		[SerializeField]
+		private bool initialisedSizes;
+		
 		private void MultiColumnListGUI()
 		{
+			MultiColumnHeader multiColumnHeader = treeView.multiColumnHeader;
+			if (!initialisedSizes)
+			{
+				Debug.Log("Reinit");
+				GUIStyle style = "MultiColumnHeader";
+				for (int i = 0; i < columnContexts.Count; i++)
+				{
+					var column = multiColumnHeader.GetColumn(i);
+					column.width = Mathf.Max(column.minWidth, style.CalcSize(column.headerContent).x);
+				}
+				multiColumnHeader.ResizeToFit();
+				initialisedSizes = true;
+			}
+			
 			Rect rect = assetListContainer.contentRect;
 			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
 
@@ -226,7 +260,7 @@ namespace Vertx.Editor
 				HoveredIcon = null;
 				Repaint();
 			}
-			else if (Event.current.mousePosition.x < treeView.multiColumnHeader.GetColumnRect(0).xMax && focusedWindow == this)
+			else if (Event.current.mousePosition.x < multiColumnHeader.GetColumnRect(0).xMax && focusedWindow == this)
 				Repaint();
 		}
 
@@ -355,7 +389,11 @@ namespace Vertx.Editor
 
 		public void AddItemsToMenu(GenericMenu menu)
 		{
-			menu.AddItem(new GUIContent("Refresh from Configuration asset."), false, OnEnable);
+			menu.AddItem(new GUIContent("Refresh from Configuration asset."), false, ()=>
+			{
+				initialisedSizes = false;
+				OnEnable();
+			});
 		}
 	}
 }
