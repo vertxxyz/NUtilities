@@ -100,6 +100,7 @@ namespace Vertx.Editor
 						case SerializedPropertyType.String:
 							break;
 						case SerializedPropertyType.Color:
+							propertyName = "ColorDisplay";
 							break;
 						case SerializedPropertyType.ObjectReference:
 							break;

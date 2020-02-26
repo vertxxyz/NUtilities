@@ -29,6 +29,8 @@ namespace Vertx.Editor
 			public SerializedPropertyType PropertyType;
 
 			public NumericalPropertyDisplay NumericalDisplay;
+
+			public ColorPropertyDisplay ColorDisplay;
 		}
 
 		[SerializeField]

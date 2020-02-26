@@ -15,11 +15,20 @@ namespace Vertx.Editor
 	internal enum NumericalPropertyDisplay
 	{
 		Property,
-		Readonly,
-		ReadonlyPercentage,
-		ReadonlyPercentageNormalised,
-		ReadonlyProgress,
-		ReadonlyProgressNormalised
+		ReadonlyProperty,
+		ReadonlyLabel,
+		ReadonlyPercentageLabel,
+		ReadonlyPercentageLabelNormalised,
+		ReadonlyProgressBar,
+		ReadonlyProgressBarNormalised
+	}
+
+	internal enum ColorPropertyDisplay
+	{
+		Property,
+		ReadonlyProperty,
+		ReadonlySimplified,
+		ReadonlySimplifiedHDR
 	}
 
 	internal class ColumnContext
@@ -42,11 +51,7 @@ namespace Vertx.Editor
 					onGUI = Property;
 					break;
 				case GUIType.ReadonlyProperty:
-					onGUI = (rect, property) =>
-					{
-						using (new EditorGUI.DisabledScope(true))
-							Property(rect, property);
-					};
+					onGUI = ReadonlyProperty;
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(guiType), guiType, null);
@@ -61,21 +66,48 @@ namespace Vertx.Editor
 				case NumericalPropertyDisplay.Property:
 					onGUI = Property;
 					break;
-				case NumericalPropertyDisplay.Readonly:
+				case NumericalPropertyDisplay.ReadonlyProperty:
+					onGUI = ReadonlyProperty;
+					break;
+				case NumericalPropertyDisplay.ReadonlyLabel:
 					onGUI = NumericalProperty;
 					break;
-				case NumericalPropertyDisplay.ReadonlyPercentage:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
 					onGUI = NumericalPropertyPercentage;
 					break;
-				case NumericalPropertyDisplay.ReadonlyPercentageNormalised:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
 					onGUI = NumericalPropertyPercentageNormalised;
 					break;
-				case NumericalPropertyDisplay.ReadonlyProgress:
+				case NumericalPropertyDisplay.ReadonlyProgressBar:
+					onGUI = NumericalPropertyProgressBar;
 					break;
-				case NumericalPropertyDisplay.ReadonlyProgressNormalised:
+				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+					onGUI = NumericalPropertyProgressBarNormalised;
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(numericalDisplay), numericalDisplay, null);
+			}
+		}
+
+		public ColumnContext(string propertyPath, ColorPropertyDisplay colorDisplay)
+		{
+			this.propertyPath = propertyPath;
+			switch (colorDisplay)
+			{
+				case ColorPropertyDisplay.Property:
+					onGUI = Property;
+					break;
+				case ColorPropertyDisplay.ReadonlyProperty:
+					onGUI = ReadonlyProperty;
+					break;
+				case ColorPropertyDisplay.ReadonlySimplified:
+					onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, false);
+					break;
+				case ColorPropertyDisplay.ReadonlySimplifiedHDR:
+					onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, true);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(colorDisplay), colorDisplay, null);
 			}
 		}
 
@@ -101,6 +133,12 @@ namespace Vertx.Editor
 		#region Default GUIs
 
 		private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, true);
+		
+		private static void ReadonlyProperty(Rect r, SerializedProperty p)
+		{
+			using (new EditorGUI.DisabledScope(true))
+				EditorGUI.PropertyField(r, p, GUIContent.none, true);
+		}
 
 		private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName, AssetListWindow window)
 		{
@@ -167,17 +205,52 @@ namespace Vertx.Editor
 		private static void NumericalPropertyPercentage(Rect r, SerializedProperty p) =>
 			GUI.Label(
 				r,
-				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue)}%",
+				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue):##0.##}%",
 				EditorStyles.miniLabel
 			);
 		
 		private static void NumericalPropertyPercentageNormalised(Rect r, SerializedProperty p) =>
 			GUI.Label(
 				r,
-				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue) * 100}%",
+				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue) * 100:##0.##}%",
 				EditorStyles.miniLabel
 			);
 		
+		private static void NumericalPropertyProgressBar(Rect r, SerializedProperty p)
+		{
+			float progress = p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue;
+			EditorGUI.ProgressBar(
+				r,
+				progress / 100f,
+				$"{progress:##0.##}%"
+			);
+		}
+
+		private static void NumericalPropertyProgressBarNormalised(Rect r, SerializedProperty p)
+		{
+			float progress = p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue;
+			EditorGUI.ProgressBar(
+				r,
+				progress,
+				$"{progress * 100:##0.##}%"
+			);
+		}
+
+		#endregion
+
+		#region Color GUIs
+		
+		private static readonly RectOffset singleOffset = new RectOffset(0, 0, 1, 1);
+
+		private static void ReadonlyColorSimplified(Rect r, SerializedProperty p, bool hdr)
+		{
+			/*EditorUtils.GetObjectFromProperty(p, out _, out FieldInfo fI);
+			bool hdr = fI.GetCustomAttribute<ColorUsageAttribute>()?.hdr ?? false;*/
+			Color c = p.colorValue;
+			r = singleOffset.Remove(r);
+			EditorGUI.ColorField(r, GUIContent.none, c, false, c.a < 1, hdr);
+		}
+
 		#endregion
 	}
 }

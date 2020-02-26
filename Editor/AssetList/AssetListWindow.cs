@@ -172,7 +172,13 @@ namespace Vertx.Editor
 						case SerializedPropertyType.Generic:
 						case SerializedPropertyType.Boolean:
 						case SerializedPropertyType.String:
+							throw new NotImplementedException();
 						case SerializedPropertyType.Color:
+							contexts.Add(new ColumnContext(
+								c.PropertyPath,
+								c.ColorDisplay
+								));
+							break;
 						case SerializedPropertyType.ObjectReference:
 						case SerializedPropertyType.LayerMask:
 						case SerializedPropertyType.Enum:
