@@ -29,6 +29,8 @@ namespace Vertx.Editor
 			public SerializedPropertyType PropertyType;
 
 			public NumericalPropertyDisplay NumericalDisplay;
+			
+			public EnumPropertyDisplay EnumDisplay;
 
 			public ColorPropertyDisplay ColorDisplay;
 		}
@@ -42,6 +44,11 @@ namespace Vertx.Editor
 		private string typeString;
 
 		public string TypeString => typeString;
+
+		[SerializeField]
+		private NamePropertyDisplay nameDisplay;
+		
+		public NamePropertyDisplay NameDisplay => nameDisplay;
 
 		[SerializeField]
 		private string iconPropertyPath;

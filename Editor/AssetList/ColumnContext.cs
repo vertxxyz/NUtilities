@@ -6,6 +6,14 @@ using Object = UnityEngine.Object;
 
 namespace Vertx.Editor
 {
+	internal enum NamePropertyDisplay
+	{
+		Label,
+		NicifiedLabel,
+		CenteredLabel,
+		NicifiedCenteredLabel,
+	}
+	
 	internal enum GUIType
 	{
 		Property,
@@ -23,6 +31,13 @@ namespace Vertx.Editor
 		ReadonlyProgressBarNormalised
 	}
 
+	public enum EnumPropertyDisplay
+	{
+		Property,
+		ReadonlyProperty,
+		ReadonlyLabel
+	}
+
 	internal enum ColorPropertyDisplay
 	{
 		Property,
@@ -36,10 +51,26 @@ namespace Vertx.Editor
 		private readonly string propertyPath;
 		private readonly Action<Rect, SerializedProperty> onGUI;
 
-		public ColumnContext(string propertyPath, string iconPropertyName, AssetListWindow window)
+		public ColumnContext(string propertyPath, string iconPropertyName, NamePropertyDisplay nameDisplay, AssetListWindow window)
 		{
 			this.propertyPath = propertyPath;
-			onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window);
+			switch (nameDisplay)
+			{
+				case NamePropertyDisplay.Label:
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, GUI.Label);
+					break;
+				case NamePropertyDisplay.NicifiedLabel:
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyNicifiedLabelProperty);
+					break;
+				case NamePropertyDisplay.CenteredLabel:
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyCenteredLabelProperty);
+					break;
+				case NamePropertyDisplay.NicifiedCenteredLabel:
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyNicifiedCenteredLabelProperty);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(nameDisplay), nameDisplay, null);
+			}
 		}
 
 		public ColumnContext(string propertyPath, GUIType guiType)
@@ -89,6 +120,25 @@ namespace Vertx.Editor
 			}
 		}
 
+		public ColumnContext(string propertyPath, EnumPropertyDisplay enumDisplay)
+		{
+			this.propertyPath = propertyPath;
+			switch (enumDisplay)
+			{
+				case EnumPropertyDisplay.Property:
+					onGUI = Property;
+					break;
+				case EnumPropertyDisplay.ReadonlyProperty:
+					onGUI = ReadonlyProperty;
+					break;
+				case EnumPropertyDisplay.ReadonlyLabel:
+					onGUI = ReadonlyEnumProperty;
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(enumDisplay), enumDisplay, null);
+			}
+		}
+
 		public ColumnContext(string propertyPath, ColorPropertyDisplay colorDisplay)
 		{
 			this.propertyPath = propertyPath;
@@ -133,14 +183,19 @@ namespace Vertx.Editor
 		#region Default GUIs
 
 		private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, true);
-		
+
 		private static void ReadonlyProperty(Rect r, SerializedProperty p)
 		{
 			using (new EditorGUI.DisabledScope(true))
 				EditorGUI.PropertyField(r, p, GUIContent.none, true);
 		}
 
-		private static void LargeObjectLabelWithPing(Rect r, SerializedProperty p, string iconPropertyName, AssetListWindow window)
+		private static void LargeObjectLabelWithPing(
+			Rect r,
+			SerializedProperty p,
+			string iconPropertyName,
+			AssetListWindow window,
+			Action<Rect, string> labelGUI)
 		{
 			Object target = p.serializedObject.targetObject;
 			if (!(target is Texture texture))
@@ -176,19 +231,29 @@ namespace Vertx.Editor
 
 			Event e = Event.current;
 
+			float h = r.height - 2;
+			var iconRect = new Rect(r.x + 10, r.y + 1, h, h);
 			if (texture != null)
 			{
-				float h = r.height - 2;
-				AssetListUtility.DrawTextureInRect(new Rect(r.x + 10, r.y + 1, h, h), texture);
+				AssetListUtility.DrawTextureInRect(iconRect, texture);
 				if (r.Contains(e.mousePosition) && EditorWindow.focusedWindow == window)
 					window.HoveredIcon = texture;
 			}
 
-			GUI.Label(
-				new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height),
-				target.name);
-			if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
-				EditorGUIUtility.PingObject(target);
+			var labelRect = new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height);
+			labelGUI.Invoke(labelRect, target.name);
+			if (e.type == EventType.MouseDown && e.button == 0)
+			{
+				if (labelRect.Contains(e.mousePosition))
+				{
+					if(target is Component component)
+						EditorGUIUtility.PingObject(component.gameObject);
+					else
+						EditorGUIUtility.PingObject(target);
+				}
+				else if(iconRect.Contains(e.mousePosition) && texture != null)
+					EditorGUIUtility.PingObject(texture);
+			}
 		}
 
 		#endregion
@@ -208,14 +273,14 @@ namespace Vertx.Editor
 				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue):##0.##}%",
 				EditorStyles.miniLabel
 			);
-		
+
 		private static void NumericalPropertyPercentageNormalised(Rect r, SerializedProperty p) =>
 			GUI.Label(
 				r,
 				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue) * 100:##0.##}%",
 				EditorStyles.miniLabel
 			);
-		
+
 		private static void NumericalPropertyProgressBar(Rect r, SerializedProperty p)
 		{
 			float progress = p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue;
@@ -238,8 +303,37 @@ namespace Vertx.Editor
 
 		#endregion
 
+		#region Enum GUIs
+
+		private static GUIStyle centeredMiniLabel;
+
+		private static GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.centeredGreyMiniLabel)
+		{
+			normal =
+			{
+				textColor = Color.black
+			}
+		});
+
+		private static void ReadonlyEnumProperty(Rect r, SerializedProperty p)
+			=> EditorGUI.LabelField(r, p.enumNames[p.enumValueIndex], CenteredMiniLabel);
+
+		#endregion
+
+		#region Name GUIs
+		private static void ReadonlyNicifiedLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label));
+
+		private static void ReadonlyCenteredLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, label, CenteredMiniLabel);
+
+		private static void ReadonlyNicifiedCenteredLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label), CenteredMiniLabel);
+
+		#endregion
+
 		#region Color GUIs
-		
+
 		private static readonly RectOffset singleOffset = new RectOffset(0, 0, 1, 1);
 
 		private static void ReadonlyColorSimplified(Rect r, SerializedProperty p, bool hdr)

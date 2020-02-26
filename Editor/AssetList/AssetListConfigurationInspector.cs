@@ -23,6 +23,7 @@ namespace Vertx.Editor
 			assetType,
 			columns,
 			typeString,
+			nameDisplay,
 			iconPropertyPath;
 
 		private ReorderableList reorderableList;
@@ -59,6 +60,7 @@ namespace Vertx.Editor
 			assetType = serializedObject.FindProperty("assetType");
 			columns = serializedObject.FindProperty("columns");
 			typeString = serializedObject.FindProperty("typeString");
+			nameDisplay = serializedObject.FindProperty("nameDisplay");
 			iconPropertyPath = serializedObject.FindProperty("iconPropertyPath");
 
 			type = Type.GetType(typeString.stringValue);
@@ -105,8 +107,8 @@ namespace Vertx.Editor
 						case SerializedPropertyType.ObjectReference:
 							break;
 						case SerializedPropertyType.LayerMask:
-							break;
 						case SerializedPropertyType.Enum:
+							propertyName = "EnumDisplay";
 							break;
 						case SerializedPropertyType.Vector2:
 							break;
@@ -222,6 +224,7 @@ namespace Vertx.Editor
 					EditorGUILayout.TextField("Title", "Name");
 					EditorGUILayout.TextField("Property Path", "m_Name");
 				}
+				EditorGUILayout.PropertyField(nameDisplay);
 			}
 
 			reorderableList.DoLayoutList();

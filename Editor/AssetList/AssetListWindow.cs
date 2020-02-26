@@ -150,7 +150,7 @@ namespace Vertx.Editor
 
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
-				new ColumnContext("m_Name", configuration.IconPropertyPath, this)
+				new ColumnContext("m_Name", configuration.IconPropertyPath, configuration.NameDisplay, this)
 			};
 
 			if (configuration.Columns != null)
@@ -178,6 +178,24 @@ namespace Vertx.Editor
 									break;
 							}
 							break;
+						case SerializedPropertyType.Enum:
+							contexts.Add(new ColumnContext(
+								c.PropertyPath,
+								c.EnumDisplay
+							));
+							switch (c.EnumDisplay)
+							{
+								case EnumPropertyDisplay.Property:
+								case EnumPropertyDisplay.ReadonlyProperty:
+									minWidth = 150;
+									break;
+								case EnumPropertyDisplay.ReadonlyLabel:
+									minWidth = 80;
+									break;
+								default:
+									throw new ArgumentOutOfRangeException();
+							}
+							break;
 						case SerializedPropertyType.Color:
 							minWidth = 150;
 							contexts.Add(new ColumnContext(
@@ -186,11 +204,10 @@ namespace Vertx.Editor
 								));
 							break;
 						case SerializedPropertyType.Generic:
-                        case SerializedPropertyType.Boolean:
-                        case SerializedPropertyType.String:
+						case SerializedPropertyType.Boolean:
+						case SerializedPropertyType.String:
 						case SerializedPropertyType.ObjectReference:
 						case SerializedPropertyType.LayerMask:
-						case SerializedPropertyType.Enum:
 						case SerializedPropertyType.Vector2:
 						case SerializedPropertyType.Vector3:
 						case SerializedPropertyType.Vector4:
@@ -238,7 +255,7 @@ namespace Vertx.Editor
 			MultiColumnHeader multiColumnHeader = treeView.multiColumnHeader;
 			if (!initialisedSizes)
 			{
-				Debug.Log("Reinit");
+				//Debug.Log("Re-Init");
 				GUIStyle style = "MultiColumnHeader";
 				for (int i = 0; i < columnContexts.Count; i++)
 				{
