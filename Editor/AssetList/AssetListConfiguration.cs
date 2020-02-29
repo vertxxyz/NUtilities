@@ -12,6 +12,13 @@ namespace Vertx.Editor
 		InSceneAndAssets
 	}
 
+	internal enum ArrayIndexing
+	{
+		First,
+		ByKey,
+		ByIndex
+	}
+
 	internal class AssetListConfiguration : ScriptableObject
 	{
 		[SerializeField]
@@ -22,15 +29,34 @@ namespace Vertx.Editor
 		[Serializable]
 		internal class ColumnConfiguration
 		{
+			[Tooltip("The path to the property that is displayed")]
 			public string PropertyPath;
-
+			
+			[Tooltip("The title used in the column's header")]
 			public string Title;
 
 			public SerializedPropertyType PropertyType;
 
+			#region Array
+
+			public bool IsArray;
+			public ArrayIndexing ArrayIndexing;
+			[Tooltip("The property used in conjunction with the query. The first valid query result will provide the index for the for the drawing array element")]
+			public string ArrayPropertyKey;
+			[Tooltip("A Regex query on the value as a string")]
+			public string ArrayQuery;
+			[Min(0)]
+			public int ArrayIndex;
+
+			[Tooltip("The path to the property that is displayed if the query on the property key is met")]
+			public string ArrayPropertyPath;
+			#endregion
+
 			public NumericalPropertyDisplay NumericalDisplay;
-			
+
 			public EnumPropertyDisplay EnumDisplay;
+
+			public StringPropertyDisplay StringDisplay;
 
 			public ColorPropertyDisplay ColorDisplay;
 		}

@@ -8,6 +8,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using Vertx.Extensions;
+using static Vertx.Editor.AssetListUtility;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Editor
@@ -35,7 +36,9 @@ namespace Vertx.Editor
 			addLabel = new GUIContent("Add Column"),
 			cancelLabel = new GUIContent("Cancel"),
 			referenceObjectLabel = new GUIContent("Reference Object", "This object is used to gather Serialized Properties for column creation."),
-			searchlabel = new GUIContent("Serialized Property Search");
+			searchlabel = new GUIContent("Serialized Property Search"),
+			addArrayKeyLabel = new GUIContent("Add Key", "Find a Serialized Property to use as a key into the above array property."),
+			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", "Find a Serialized Property to draw if the key's query has passed.");
 
 		[SerializeField]
 		private AdvancedDropdownState propertyDropdownState;
@@ -54,6 +57,22 @@ namespace Vertx.Editor
 
 		private RectOffset backgroundOffset;
 
+		private struct PropertyData
+		{
+			public SerializedPropertyType Type;
+			public bool IsArray;
+			public bool IsInConfiguration;
+
+			public PropertyData(AssetListConfiguration configuration, SerializedProperty property)
+			{
+				Type = property.propertyType;
+				IsArray = property.isArray;
+				IsInConfiguration = configuration.Columns.Any(c => c.PropertyPath.Equals(property.propertyPath));
+			}
+		}
+		
+		private readonly Dictionary<int, float> heightOverrideLookup = new Dictionary<int, float>();
+		
 		protected override void OnEnable()
 		{
 			base.OnEnable();
@@ -75,6 +94,7 @@ namespace Vertx.Editor
 			{
 				drawElementCallback = (rect, index, active, focused) =>
 				{
+					float min = rect.y;
 					if (index % 2 == 0)
 						EditorGUI.DrawRect(backgroundOffset.Add(rect), new Color(0f, 0f, 0f, 0.075f));
 					SerializedProperty column = columns.GetArrayElementAtIndex(index);
@@ -92,6 +112,67 @@ namespace Vertx.Editor
 					switch (propertyType)
 					{
 						case SerializedPropertyType.Generic:
+							/*
+							bool IsArray;
+							ArrayIndexing ArrayIndexing;
+							string ArrayPropertyKey;
+							string ArrayQuery;
+							int ArrayIndex;
+							string ArrayPropertyPath;
+							*/
+							bool isArray = column.FindPropertyRelative("IsArray").boolValue;
+							if (isArray)
+							{
+								SerializedProperty indexing = column.FindPropertyRelative("ArrayIndexing");
+								rect.NextGUIRect();
+								EditorGUI.PropertyField(rect, indexing);
+								switch ((ArrayIndexing)indexing.intValue)
+								{
+									case ArrayIndexing.First:
+										break;
+									case ArrayIndexing.ByKey:
+										//The property to look for as a key. This is associated with the query.
+										rect.NextGUIRect();
+										SerializedProperty key = column.FindPropertyRelative("ArrayPropertyKey");
+										using(new EditorGUI.DisabledScope(true))
+											EditorGUI.PropertyField(rect, key);
+										rect.NextGUIRect();
+										if (GUI.Button(rect, addArrayKeyLabel))
+											DisplayArrayKeyPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
+
+										//The query into the array. This is associated with the array property key.
+										if (!string.IsNullOrEmpty(key.stringValue))
+										{
+											rect.NextGUIRect();
+											SerializedProperty arrayQuery = column.FindPropertyRelative("ArrayQuery");
+											EditorGUI.PropertyField(rect, arrayQuery);
+
+											//The property to draw if the query has passed.
+											if (!string.IsNullOrEmpty(arrayQuery.stringValue))
+											{
+												rect.NextGUIRect();
+												using(new EditorGUI.DisabledScope(true))
+													EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayPropertyPath"));
+												rect.NextGUIRect();
+												if (GUI.Button(rect, addDrawingPropertyLabel))
+                                                	DisplayArrayDrawingPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
+											}
+										}
+										
+										break;
+									case ArrayIndexing.ByIndex:
+										rect.NextGUIRect();
+										EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayIndex"));
+										break;
+									default:
+										throw new ArgumentOutOfRangeException();
+								}
+								
+								if (heightOverrideLookup.ContainsKey(index))
+									heightOverrideLookup[index] = rect.yMax - min;
+								else
+									heightOverrideLookup.Add(index, rect.yMax - min);
+							}
 							break;
 						case SerializedPropertyType.Integer:
 						case SerializedPropertyType.Float:
@@ -155,11 +236,24 @@ namespace Vertx.Editor
 					}
 				},
 				headerHeight = 0,
-				elementHeight = EditorGUIExtensions.HeightWithSpacing * 3,
-				displayAdd = false
+				elementHeightCallback = index =>
+				{
+					if (heightOverrideLookup.TryGetValue(index, out float height))
+						return height;
+					return EditorGUIExtensions.HeightWithSpacing * 3;
+				},
+				onReorderCallback = list => heightOverrideLookup.Clear(),
+				displayAdd = false,
+				onRemoveCallback = list =>
+				{
+					ReorderableList.defaultBehaviours.DoRemoveButton(list);
+					//Refresh property dropdown (this currently is only done to refresh the "enabled" state of the properties)
+					CreatePropertyDropdown();
+					heightOverrideLookup.Clear();
+				}
 			};
 
-			referenceObject = AssetListUtility.LoadAssetByTypeName(type, type.IsSubclassOf(typeof(Component)), (AssetType) assetType.intValue);
+			referenceObject = LoadAssetByTypeName(type, type.IsSubclassOf(typeof(Component)), (AssetType) assetType.intValue);
 			if (referenceObject != null)
 				CreatePropertyDropdown();
 		}
@@ -224,6 +318,7 @@ namespace Vertx.Editor
 					EditorGUILayout.TextField("Title", "Name");
 					EditorGUILayout.TextField("Property Path", "m_Name");
 				}
+
 				EditorGUILayout.PropertyField(nameDisplay);
 			}
 
@@ -260,12 +355,29 @@ namespace Vertx.Editor
 			}
 
 			HashSet<string> propertyPaths = new HashSet<string>();
-			Dictionary<string, SerializedPropertyType> typeLookup = new Dictionary<string, SerializedPropertyType>();
+			Dictionary<string, PropertyData> propertyLookup = new Dictionary<string, PropertyData>();
 			var iterator = new ScriptableObjectIterator(referenceObject);
+			var configuration = (AssetListConfiguration) target;
 			foreach (SerializedProperty prop in iterator)
 			{
+				if (prop.propertyType == SerializedPropertyType.Generic)
+				{
+					if (prop.isArray)
+					{
+						propertyPaths.Add(prop.propertyPath);
+						propertyLookup.Add(prop.propertyPath, new PropertyData (configuration, prop));
+
+						if (!prop.NextVisible(false))
+							break;
+						iterator.PauseIteratorOnce = true;
+					}
+
+					//We can't display generic fields anyway.
+					continue;
+				}
+
 				propertyPaths.Add(prop.propertyPath);
-				typeLookup.Add(prop.propertyPath, prop.propertyType);
+				propertyLookup.Add(prop.propertyPath, new PropertyData (configuration, prop));
 			}
 
 			if (propertyDropdownState == null)
@@ -276,9 +388,10 @@ namespace Vertx.Editor
 				SerializedProperty column = columns.GetArrayElementAtIndex(columns.arraySize++);
 				column.FindPropertyRelative("PropertyPath").stringValue = propPath;
 				column.FindPropertyRelative("Title").stringValue = ObjectNames.NicifyVariableName(propPath);
-				column.FindPropertyRelative("PropertyType").intValue = (int) typeLookup[propPath];
-				serializedObject.ApplyModifiedProperties();
-			}, propertyPaths);
+				column.FindPropertyRelative("PropertyType").intValue = (int) propertyLookup[propPath].Type;
+				column.FindPropertyRelative("IsArray").boolValue = propertyLookup[propPath].IsArray;
+					serializedObject.ApplyModifiedProperties();
+			}, propertyPaths, propertyLookup);
 		}
 
 		void CreateIconPropertyDropdown()
@@ -343,7 +456,7 @@ namespace Vertx.Editor
 			if (iconPropertyDropdownState == null)
 				iconPropertyDropdownState = new AdvancedDropdownState();
 
-			iconPropertyDropdown = new PropertyDropdown(iconPropertyDropdownState, AssignPropPath, iconPropertyPaths);
+			iconPropertyDropdown = new PropertyDropdown(iconPropertyDropdownState, AssignPropPath, iconPropertyPaths, null);
 
 			void AssignPropPath(string propPath)
 			{
@@ -352,17 +465,100 @@ namespace Vertx.Editor
 			}
 		}
 
+		private void DisplayArrayKeyPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column)
+		{
+			HashSet<string> propertyPaths = new HashSet<string>();
+
+			var iterator = new ScriptableObjectPropertyIterator(referenceObject, propertyPath);
+			if (!iterator.IsValid())
+			{
+				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
+				return;
+			}
+			
+			foreach (SerializedProperty property in iterator)
+			{
+				if(!IsValidPropertyKeyType(property.propertyType)) continue;
+				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1));// + 1 to skip the '.'
+			}
+
+			PropertyDropdown dropdown = new PropertyDropdown(new AdvancedDropdownState(), s =>
+			{
+				column.FindPropertyRelative("ArrayPropertyKey").stringValue = s;
+				column.serializedObject.ApplyModifiedProperties();
+			}, propertyPaths, null);
+			dropdown.Show(rect);
+		}
+		
+		private void DisplayArrayDrawingPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column)
+		{
+			HashSet<string> propertyPaths = new HashSet<string>();
+
+			var iterator = new ScriptableObjectPropertyIterator(referenceObject, propertyPath);
+			if (!iterator.IsValid())
+			{
+				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
+				return;
+			}
+			
+			foreach (SerializedProperty property in iterator)
+			{
+				if(property.propertyType == SerializedPropertyType.Generic) continue;
+				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1));// + 1 to skip the '.'
+			}
+
+			PropertyDropdown dropdown = new PropertyDropdown(new AdvancedDropdownState(), s =>
+			{
+				column.FindPropertyRelative("ArrayPropertyPath").stringValue = s;
+				column.serializedObject.ApplyModifiedProperties();
+			}, propertyPaths, null);
+			dropdown.Show(rect);
+		}
+
 		private class ScriptableObjectIterator : IEnumerable<SerializedProperty>
 		{
 			private readonly SerializedObject serializedObject;
+			public bool PauseIteratorOnce;
 
-			public ScriptableObjectIterator(Object referenceObject) => serializedObject = new SerializedObject(referenceObject);
+			public ScriptableObjectIterator(Object referenceObject)
+			{
+				serializedObject = new SerializedObject(referenceObject);
+				typeof(SerializedObject).GetProperty("inspectorMode", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(serializedObject, 1);
+			}
 
 			public IEnumerator<SerializedProperty> GetEnumerator()
 			{
-				typeof(SerializedObject).GetProperty("inspectorMode", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(serializedObject, 1);
 				SerializedProperty prop = serializedObject.GetIterator();
-				while (prop.NextVisible(true))
+				while (PauseIteratorOnce || prop.NextVisible(true))
+				{
+					PauseIteratorOnce = false;
+					yield return prop;
+				}
+
+				serializedObject.Dispose();
+			}
+
+			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		}
+		
+		private class ScriptableObjectPropertyIterator : IEnumerable<SerializedProperty>
+		{
+			private readonly SerializedObject serializedObject;
+			private readonly SerializedProperty prop;
+
+			public ScriptableObjectPropertyIterator(Object referenceObject, string parentPropertyPath)
+			{
+				serializedObject = new SerializedObject(referenceObject);
+				typeof(SerializedObject).GetProperty("inspectorMode", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(serializedObject, 1);
+				prop = serializedObject.FindProperty(parentPropertyPath);
+			}
+
+			public bool IsValid() => prop != null;
+
+			public IEnumerator<SerializedProperty> GetEnumerator()
+			{
+				SerializedProperty end = prop.GetEndProperty();
+				while (prop.NextVisible(true) && !SerializedProperty.EqualContents(prop, end))
 					yield return prop;
 				serializedObject.Dispose();
 			}
@@ -374,12 +570,14 @@ namespace Vertx.Editor
 		{
 			private readonly Action<string> itemSelected;
 			private readonly HashSet<string> propertyPaths;
+			private readonly Dictionary<string, PropertyData> propertyLookup;
 			private readonly Dictionary<int, string> pathLookup = new Dictionary<int, string>();
 
-			public PropertyDropdown(AdvancedDropdownState state, Action<string> itemSelected, HashSet<string> propertyPaths) : base(state)
+			public PropertyDropdown(AdvancedDropdownState state, Action<string> itemSelected, HashSet<string> propertyPaths, Dictionary<string, PropertyData> propertyLookup) : base(state)
 			{
 				this.itemSelected = itemSelected;
 				this.propertyPaths = propertyPaths;
+				this.propertyLookup = propertyLookup;
 				minimumSize = new Vector2(200, 300);
 			}
 
@@ -430,7 +628,11 @@ namespace Vertx.Editor
 								//If the menu path is no longer a path, add it to the root.
 								if (string.IsNullOrEmpty(menuPath))
 									menuPath = path;
-								AdvancedDropdownItem baseDropDownItem = new AdvancedDropdownItem(ObjectNames.NicifyVariableName(menuPath));
+								AdvancedDropdownItem baseDropDownItem = new AdvancedDropdownItem(
+									ObjectNames.NicifyVariableName(menuPath)
+								);
+								if (propertyLookup?[propertyPath].IsInConfiguration ?? false)
+									baseDropDownItem.enabled = false;
 								if (depthFirst != null)
 									baseDropDownItem.AddChild(depthFirst);
 								else
@@ -454,6 +656,11 @@ namespace Vertx.Editor
 							}
 
 							AdvancedDropdownItem newDropDownItem = new AdvancedDropdownItem(name);
+							if (propertyLookup?[propertyPath].IsInConfiguration ?? false)
+							{
+								newDropDownItem.enabled = false;
+							}
+
 							if (depthFirst != null)
 								newDropDownItem.AddChild(depthFirst);
 							else

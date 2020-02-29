@@ -177,6 +177,7 @@ namespace Vertx.Editor
 									minWidth = 50;
 									break;
 							}
+
 							break;
 						case SerializedPropertyType.Enum:
 							contexts.Add(new ColumnContext(
@@ -195,17 +196,24 @@ namespace Vertx.Editor
 								default:
 									throw new ArgumentOutOfRangeException();
 							}
+
+							break;
+						case SerializedPropertyType.String:
+							minWidth = 150;
+							contexts.Add(new ColumnContext(
+								c.PropertyPath,
+								c.StringDisplay
+							));
 							break;
 						case SerializedPropertyType.Color:
 							minWidth = 150;
 							contexts.Add(new ColumnContext(
 								c.PropertyPath,
 								c.ColorDisplay
-								));
+							));
 							break;
 						case SerializedPropertyType.Generic:
 						case SerializedPropertyType.Boolean:
-						case SerializedPropertyType.String:
 						case SerializedPropertyType.ObjectReference:
 						case SerializedPropertyType.LayerMask:
 						case SerializedPropertyType.Vector2:
@@ -233,7 +241,7 @@ namespace Vertx.Editor
 							));
 							break;
 					}
-					
+
 					columns.Add(new MultiColumnHeaderState.Column
 					{
 						headerContent = new GUIContent(columnTitleContent),
@@ -249,7 +257,7 @@ namespace Vertx.Editor
 
 		[SerializeField]
 		private bool initialisedSizes;
-		
+
 		private void MultiColumnListGUI()
 		{
 			MultiColumnHeader multiColumnHeader = treeView.multiColumnHeader;
@@ -262,10 +270,11 @@ namespace Vertx.Editor
 					var column = multiColumnHeader.GetColumn(i);
 					column.width = Mathf.Max(column.minWidth, style.CalcSize(column.headerContent).x);
 				}
+
 				multiColumnHeader.ResizeToFit();
 				initialisedSizes = true;
 			}
-			
+
 			Rect rect = assetListContainer.contentRect;
 			treeView.OnGUI(new Rect(0, 0, rect.width, rect.height));
 
@@ -287,7 +296,7 @@ namespace Vertx.Editor
 			private readonly Queue<int> sortQueue = new Queue<int>();
 			private List<Object> allObjects;
 			private readonly Dictionary<Object, SerializedObject> serializedObjectLookup = new Dictionary<Object, SerializedObject>();
-			
+
 			private readonly GUIContent missingPropertyLabel = new GUIContent("Property was not found.", "The property listed for this column was not present on this Object.");
 
 			private GUIStyle centeredMiniLabel;
@@ -363,13 +372,13 @@ namespace Vertx.Editor
 				for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
 				{
 					Rect cellRect = args.GetCellRect(i);
-					CellGUI(cellRect, item, serializedObject, args.GetColumn(i), ref args);
+					CellGUI(cellRect, serializedObject, args.GetColumn(i), ref args);
 				}
 
 				GUI.color = Color.white;
 			}
 
-			private void CellGUI(Rect cellRect, TreeViewItem treeContentValue, SerializedObject serializedObject, int columnIndex, ref RowGUIArgs args)
+			private void CellGUI(Rect cellRect, SerializedObject serializedObject, int columnIndex, ref RowGUIArgs args)
 			{
 				ColumnContext columnContext = window.columnContexts[columnIndex];
 				if (columnContext == null)
@@ -385,6 +394,7 @@ namespace Vertx.Editor
 					GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
 					return;
 				}
+
 				columnContext.OnGUI(cellRect, property);
 			}
 
@@ -406,10 +416,15 @@ namespace Vertx.Editor
 
 		public void AddItemsToMenu(GenericMenu menu)
 		{
-			menu.AddItem(new GUIContent("Refresh from Configuration asset."), false, ()=>
+			menu.AddItem(new GUIContent("Refresh from Configuration asset"), false, () =>
 			{
 				initialisedSizes = false;
 				OnEnable();
+			});
+			menu.AddItem(new GUIContent("Select Configuration asset"), false, () =>
+			{
+				EditorGUIUtility.PingObject(configuration);
+				Selection.activeObject = configuration;
 			});
 		}
 	}

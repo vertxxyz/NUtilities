@@ -13,7 +13,7 @@ namespace Vertx.Editor
 		CenteredLabel,
 		NicifiedCenteredLabel,
 	}
-	
+
 	internal enum GUIType
 	{
 		Property,
@@ -36,6 +36,16 @@ namespace Vertx.Editor
 		Property,
 		ReadonlyProperty,
 		ReadonlyLabel
+	}
+
+	internal enum StringPropertyDisplay
+	{
+		Property,
+		ReadonlyProperty,
+		ReadonlyLabel,
+		ReadonlyNicifiedLabel,
+		ReadonlyCenteredLabel,
+		ReadonlyNicifiedCenteredLabel,
 	}
 
 	internal enum ColorPropertyDisplay
@@ -136,6 +146,34 @@ namespace Vertx.Editor
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(enumDisplay), enumDisplay, null);
+			}
+		}
+
+		public ColumnContext(string propertyPath, StringPropertyDisplay stringDisplay)
+		{
+			this.propertyPath = propertyPath;
+			switch (stringDisplay)
+			{
+				case StringPropertyDisplay.Property:
+					onGUI = Property;
+					break;
+				case StringPropertyDisplay.ReadonlyProperty:
+					onGUI = ReadonlyProperty;
+					break;
+				case StringPropertyDisplay.ReadonlyLabel:
+					onGUI = (rect, property) => GUI.Label(rect, property.stringValue);
+					break;
+				case StringPropertyDisplay.ReadonlyNicifiedLabel:
+					onGUI = (rect, property) => ReadonlyNicifiedLabelProperty(rect, property.stringValue);
+					break;
+				case StringPropertyDisplay.ReadonlyCenteredLabel:
+					onGUI = (rect, property) => ReadonlyCenteredLabelProperty(rect, property.stringValue);
+					break;
+				case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
+					onGUI = (rect, property) => ReadonlyNicifiedCenteredLabelProperty(rect, property.stringValue);
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(stringDisplay), stringDisplay, null);
 			}
 		}
 
@@ -246,15 +284,28 @@ namespace Vertx.Editor
 			{
 				if (labelRect.Contains(e.mousePosition))
 				{
-					if(target is Component component)
+					if (target is Component component)
 						EditorGUIUtility.PingObject(component.gameObject);
 					else
 						EditorGUIUtility.PingObject(target);
 				}
-				else if(iconRect.Contains(e.mousePosition) && texture != null)
+				else if (iconRect.Contains(e.mousePosition) && texture != null)
 					EditorGUIUtility.PingObject(texture);
 			}
 		}
+
+		#endregion
+
+		#region Name GUIs
+
+		private static void ReadonlyNicifiedLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label));
+
+		private static void ReadonlyCenteredLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, label, CenteredMiniLabel);
+
+		private static void ReadonlyNicifiedCenteredLabelProperty(Rect r, string label)
+			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label), CenteredMiniLabel);
 
 		#endregion
 
@@ -317,18 +368,6 @@ namespace Vertx.Editor
 
 		private static void ReadonlyEnumProperty(Rect r, SerializedProperty p)
 			=> EditorGUI.LabelField(r, p.enumNames[p.enumValueIndex], CenteredMiniLabel);
-
-		#endregion
-
-		#region Name GUIs
-		private static void ReadonlyNicifiedLabelProperty(Rect r, string label)
-			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label));
-
-		private static void ReadonlyCenteredLabelProperty(Rect r, string label)
-			=> EditorGUI.LabelField(r, label, CenteredMiniLabel);
-
-		private static void ReadonlyNicifiedCenteredLabelProperty(Rect r, string label)
-			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label), CenteredMiniLabel);
 
 		#endregion
 

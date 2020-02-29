@@ -213,7 +213,6 @@ namespace Vertx.Editor
 			}
 		}
 
-
 		public static void DrawTextureInRect(Rect r, Texture texture)
 		{
 			float h = r.height - 2;
@@ -234,6 +233,23 @@ namespace Vertx.Editor
 			}
 
 			GUI.DrawTexture(textureRect, texture);
+		}
+
+		public static bool IsValidPropertyKeyType(SerializedPropertyType propertyType)
+		{
+			switch (propertyType)
+			{
+				case SerializedPropertyType.Integer:
+				case SerializedPropertyType.Boolean:
+				case SerializedPropertyType.Float:
+				case SerializedPropertyType.String:
+				case SerializedPropertyType.LayerMask:
+				case SerializedPropertyType.Enum:
+				case SerializedPropertyType.Character:
+					return true;
+				default:
+					return false;
+			}
 		}
 	}
 }
