@@ -129,8 +129,14 @@ namespace Vertx.Editor
 								switch ((ArrayIndexing)indexing.intValue)
 								{
 									case ArrayIndexing.First:
+										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
+											break;
+										DrawDrawingProperty();
 										break;
 									case ArrayIndexing.ByKey:
+										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
+											break;
+										
 										//The property to look for as a key. This is associated with the query.
 										rect.NextGUIRect();
 										SerializedProperty key = column.FindPropertyRelative("ArrayPropertyKey");
@@ -150,12 +156,7 @@ namespace Vertx.Editor
 											//The property to draw if the query has passed.
 											if (!string.IsNullOrEmpty(arrayQuery.stringValue))
 											{
-												rect.NextGUIRect();
-												using(new EditorGUI.DisabledScope(true))
-													EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayPropertyPath"));
-												rect.NextGUIRect();
-												if (GUI.Button(rect, addDrawingPropertyLabel))
-                                                	DisplayArrayDrawingPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
+												DrawDrawingProperty();
 											}
 										}
 										
@@ -163,9 +164,22 @@ namespace Vertx.Editor
 									case ArrayIndexing.ByIndex:
 										rect.NextGUIRect();
 										EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayIndex"));
+										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
+											break;
+										DrawDrawingProperty();
 										break;
 									default:
 										throw new ArgumentOutOfRangeException();
+								}
+
+								void DrawDrawingProperty()
+								{
+									rect.NextGUIRect();
+									using(new EditorGUI.DisabledScope(true))
+										EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayPropertyPath"));
+									rect.NextGUIRect();
+									if (GUI.Button(rect, addDrawingPropertyLabel))
+										DisplayArrayDrawingPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
 								}
 								
 								if (heightOverrideLookup.ContainsKey(index))
@@ -338,11 +352,23 @@ namespace Vertx.Editor
 			serializedObject.ApplyModifiedProperties();
 		}
 
+		private const string referenceObjectMissingWarning = "A reference Object is required to search for Serialized Properties.";
+		
 		bool ValidateReferenceObjectWithHelpWarning()
 		{
 			if (referenceObject != null)
 				return true;
-			EditorGUILayout.HelpBox("A reference Object is required to search for Serialized Properties.", MessageType.Warning);
+			EditorGUILayout.HelpBox(referenceObjectMissingWarning, MessageType.Warning);
+			return false;
+		}
+		
+		bool ValidateReferenceObjectWithHelpWarningRect(ref Rect rect)
+		{
+			if (referenceObject != null)
+				return true;
+			rect.NextGUIRect();
+			rect.height = EditorGUIExtensions.HeightWithSpacing * 2;
+			EditorGUI.HelpBox(rect, referenceObjectMissingWarning, MessageType.Warning);
 			return false;
 		}
 
