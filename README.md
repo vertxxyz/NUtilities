@@ -6,8 +6,9 @@ This is a platform for adding utilities to Unity as I see fit.
 
 ## Contents:
 ##### Utilities:
-- [Material Property Remapper](https://github.com/vertxxyz/NUtilities/wiki/MaterialPropertyRemapper)
 - [Package Updater](https://github.com/vertxxyz/NUtilities/wiki/Package-Updater) (Requires [Newtonsoft Json](http://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@latest))
+- Asset List
+- [Material Property Remapper](https://github.com/vertxxyz/NUtilities/wiki/MaterialPropertyRemapper)
 - [Code Generation](https://github.com/vertxxyz/NUtilities/wiki/Code-Generation)
 
 ##### Editor Helper Classes:
