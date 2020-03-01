@@ -32,9 +32,9 @@ namespace Vertx.Extensions
 			foreach (string guid in guids)
 			{
 				string path = AssetDatabase.GUIDToAssetPath(guid);
-				if (path.EndsWith($"{name}.uss"))
+				if (path.EndsWith($"/{name}.uss"))
 					values.Item1 = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
-				else if (path.EndsWith($"{name}.uxml"))
+				else if (path.EndsWith($"/{name}.uxml"))
 					values.Item2 = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
 			}
 			return values;

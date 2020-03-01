@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="Root" class="windowRootCenterer">
+        <Style src="BlankAssetList.uss" />
+        <ui:VisualElement name="VerticalCenterer" class="centeredVertically">
+            <ui:VisualElement class="spacer" />
+            <Vertx.Controls.DragAndDropBox name="DropTarget" text="Drag and Drop Asset or Component to Create Window" class="dragAndDropAsset" />
+            <ui:VisualElement name="ListViewContainer" class="listViewContainer">
+                <ui:Label text="Asset Lists" class="listViewLabel"/>
+                <ui:ListView focusable="True" name="ListView" class="listView" />
+            </ui:VisualElement>
+            <ui:VisualElement class="spacer" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
