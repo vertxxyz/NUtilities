@@ -95,6 +95,12 @@ namespace Vertx.Editor
 		private string iconPropertyPath;
 
 		public string IconPropertyPath => iconPropertyPath;
+
+		[SerializeField]
+		private bool iconIsArray;
+
+		[SerializeField]
+		private ArrayData iconArrayPropertyInformation;
 		
 		#endregion
 

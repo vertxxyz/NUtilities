@@ -42,7 +42,10 @@ namespace Vertx.Editor
 						EditorGUI.PropertyField(rect, key, GUIContent.none);
 					rect.NextGUIRect();
 					if (GUI.Button(rect, addArrayKeyLabel))
+					{
+						//retrieves properties under the first array index for the dropdown
 						DisplayArrayKeyPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject);
+					}
 
 					//The query into the array. This is associated with the array property key.
 					if (!string.IsNullOrEmpty(key.stringValue))

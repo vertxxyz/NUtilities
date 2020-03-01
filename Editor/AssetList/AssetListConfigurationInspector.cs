@@ -25,7 +25,9 @@ namespace Vertx.Editor
 			columns,
 			typeString,
 			nameDisplay,
-			iconPropertyPath;
+			iconPropertyPath,
+			iconIsArray,
+			iconArrayPropertyInformation;
 
 		private ReorderableList reorderableList;
 
@@ -56,7 +58,7 @@ namespace Vertx.Editor
 		private RectOffset backgroundOffset;
 
 		private readonly Dictionary<int, float> heightOverrideLookup = new Dictionary<int, float>();
-		
+
 		protected override void OnEnable()
 		{
 			base.OnEnable();
@@ -65,6 +67,8 @@ namespace Vertx.Editor
 			typeString = serializedObject.FindProperty("typeString");
 			nameDisplay = serializedObject.FindProperty("nameDisplay");
 			iconPropertyPath = serializedObject.FindProperty("iconPropertyPath");
+			iconIsArray = serializedObject.FindProperty("iconIsArray");
+			iconArrayPropertyInformation = serializedObject.FindProperty("iconArrayPropertyInformation");
 
 			type = Type.GetType(typeString.stringValue);
 
@@ -116,7 +120,7 @@ namespace Vertx.Editor
 									var arrayPropertyInformation = column.FindPropertyRelative("ArrayPropertyInformation");
 
 									ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject);
-									
+
 									var arrayPropertyPath = arrayPropertyInformation.FindPropertyRelative("ArrayPropertyPath");
 									if (!string.IsNullOrEmpty(arrayPropertyPath.stringValue))
 									{
@@ -303,7 +307,7 @@ namespace Vertx.Editor
 		}
 
 		private const string referenceObjectMissingWarning = "A reference Object is required to search for Serialized Properties.";
-		
+
 		public static bool ValidateReferenceObjectWithHelpWarning(Object referenceObject)
 		{
 			if (referenceObject != null)
@@ -311,7 +315,7 @@ namespace Vertx.Editor
 			EditorGUILayout.HelpBox(referenceObjectMissingWarning, MessageType.Warning);
 			return false;
 		}
-		
+
 		public static bool ValidateReferenceObjectWithHelpWarningRect(Object referenceObject, ref Rect rect)
 		{
 			if (referenceObject != null)
@@ -341,7 +345,7 @@ namespace Vertx.Editor
 					if (prop.isArray)
 					{
 						propertyPaths.Add(prop.propertyPath);
-						propertyLookup.Add(prop.propertyPath, new PropertyData (configuration, prop));
+						propertyLookup.Add(prop.propertyPath, new PropertyData(configuration, prop));
 
 						if (!prop.NextVisible(false))
 							break;
@@ -353,7 +357,7 @@ namespace Vertx.Editor
 				}
 
 				propertyPaths.Add(prop.propertyPath);
-				propertyLookup.Add(prop.propertyPath, new PropertyData (configuration, prop));
+				propertyLookup.Add(prop.propertyPath, new PropertyData(configuration, prop));
 			}
 
 			if (propertyDropdownState == null)
@@ -366,7 +370,7 @@ namespace Vertx.Editor
 				column.FindPropertyRelative("Title").stringValue = ObjectNames.NicifyVariableName(propPath);
 				column.FindPropertyRelative("PropertyType").intValue = (int) propertyLookup[propPath].Type;
 				column.FindPropertyRelative("IsArray").boolValue = propertyLookup[propPath].IsArray;
-					serializedObject.ApplyModifiedProperties();
+				serializedObject.ApplyModifiedProperties();
 			}, propertyPaths, propertyLookup);
 		}
 
@@ -380,37 +384,65 @@ namespace Vertx.Editor
 
 			HashSet<string> iconPropertyPaths = new HashSet<string>();
 			var iterator = new ScriptableObjectIterator(referenceObject);
+			
+			//Property paths that are also arrays
+			HashSet<string> iconArrayPropertyPaths = new HashSet<string>();
+			
 			Type texType = typeof(Texture);
 			Type spriteType = typeof(Sprite);
-
-			List<string> typeStrings = new List<string>
+			HashSet<string> typeStrings = new HashSet<string>
 			{
-				$"PPtr<{nameof(Texture)}>",
-				$"PPtr<{nameof(Sprite)}>"
+				$"PPtr<${nameof(Texture)}>",
+				$"PPtr<${nameof(Sprite)}>"
 			};
-			typeStrings.AddRange(
-				TypeCache.GetTypesDerivedFrom(texType)
-					.Select(type1 => $"PPtr<{type1.Name.Replace("UnityEngine.", string.Empty)}>")
-			);
-			typeStrings.AddRange(
-				TypeCache.GetTypesDerivedFrom(spriteType)
-					.Select(type1 => $"PPtr<{type1.Name.Replace("UnityEngine.", string.Empty)}>")
-			);
+			foreach (string type in TypeCache.GetTypesDerivedFrom(texType)
+				.Select(type1 => $"PPtr<${type1.Name.Replace("UnityEngine.", string.Empty)}>"))
+				typeStrings.Add(type);
 
+			foreach (string type in TypeCache.GetTypesDerivedFrom(spriteType)
+				.Select(type1 => $"PPtr<${type1.Name.Replace("UnityEngine.", string.Empty)}>"))
+				typeStrings.Add(type);
+
+			SerializedProperty skipUntil = null;
 			foreach (SerializedProperty prop in iterator)
 			{
-				if (prop.propertyType != SerializedPropertyType.ObjectReference)
-					continue;
-
-				if (prop.objectReferenceValue != null)
+				//Skip until the end of the array property
+				if (skipUntil != null && !SerializedProperty.EqualContents(prop, skipUntil))
 				{
-					Type propType = prop.objectReferenceValue.GetType();
-					if (texType.IsAssignableFrom(propType) || spriteType.IsAssignableFrom(propType))
+					skipUntil = null;
+					continue;
+				}
+
+				if (prop.propertyType == SerializedPropertyType.Generic && prop.isArray)
+				{
+					//TODO handle arrays. Check whether they have a relevant property in them.
+					bool hasTextureProperty = false;
+					SerializedProperty temp = prop.Copy();
+					SerializedProperty end = prop.GetEndProperty();
+					while (temp.Next(true) && !SerializedProperty.EqualContents(temp, end))
 					{
+						if (temp.propertyType != SerializedPropertyType.ObjectReference)
+							continue;
+
+						if (!typeStrings.Contains(temp.type))
+							continue;
+
+						hasTextureProperty = true;
+						break;
+					}
+
+					if (hasTextureProperty)
+					{
+						//Add the array property to the list if there was a valid texture property inside it.
 						iconPropertyPaths.Add(prop.propertyPath);
-						continue;
+						iconArrayPropertyPaths.Add(prop.propertyPath);
+						//Define the next property as the destination to advance the for loop to.
+						skipUntil = end;
 					}
 				}
+
+				if (prop.propertyType != SerializedPropertyType.ObjectReference)
+					continue;
 
 				if (typeStrings.Contains(prop.type))
 					iconPropertyPaths.Add(prop.propertyPath);
@@ -437,6 +469,11 @@ namespace Vertx.Editor
 			void AssignPropPath(string propPath)
 			{
 				iconPropertyPath.stringValue = propPath;
+				if (iconArrayPropertyPaths.Contains(propPath))
+				{
+					iconIsArray.boolValue = true;
+					iconArrayPropertyInformation.FindPropertyRelative("ArrayPropertyType").intValue = (int) SerializedPropertyType.ObjectReference;
+				}
 				serializedObject.ApplyModifiedProperties();
 			}
 		}
