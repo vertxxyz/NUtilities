@@ -40,16 +40,8 @@ namespace Vertx.Editor
 			#region Array
 
 			public bool IsArray;
-			public ArrayIndexing ArrayIndexing;
-			[Tooltip("The property used in conjunction with the query. The first valid query result will provide the index for the for the drawing array element")]
-			public string ArrayPropertyKey;
-			[Tooltip("A Regex query on the value as a string")]
-			public string ArrayQuery;
-			[Min(0)]
-			public int ArrayIndex;
 
-			[Tooltip("The path to the property that is displayed if the query on the property key is met")]
-			public string ArrayPropertyPath;
+			public ArrayData ArrayPropertyInformation;
 			#endregion
 
 			public NumericalPropertyDisplay NumericalDisplay;
@@ -59,6 +51,26 @@ namespace Vertx.Editor
 			public StringPropertyDisplay StringDisplay;
 
 			public ColorPropertyDisplay ColorDisplay;
+
+			public ObjectPropertyDisplay ObjectDisplay;
+		}
+
+		[Serializable]
+		internal class ArrayData
+		{
+			public ArrayIndexing ArrayIndexing;
+			[Tooltip("The property used in conjunction with the query. The first valid query result will provide the index for the for the drawing array element")]
+			public string ArrayPropertyKey;
+			/// <summary>
+			/// A Regex query on the value as a string (this tooltip is in the label field in <see cref="AssetListConfigurationInspector"/>
+			/// </summary>
+			public string ArrayQuery;
+			[Min(0)]
+			public int ArrayIndex;
+
+			[Tooltip("The path to the property that is displayed if the query on the property key is met")]
+			public string ArrayPropertyPath;
+			public SerializedPropertyType ArrayPropertyType;
 		}
 
 		[SerializeField]
@@ -76,10 +88,15 @@ namespace Vertx.Editor
 		
 		public NamePropertyDisplay NameDisplay => nameDisplay;
 
+
+		#region Icon
+
 		[SerializeField]
 		private string iconPropertyPath;
 
 		public string IconPropertyPath => iconPropertyPath;
+		
+		#endregion
 
 		public void Configure(Object target)
 		{

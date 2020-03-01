@@ -21,7 +21,7 @@ namespace Vertx.Extensions
 			foreach (string guid in guids)
 			{
 				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
-				if (asset != null && asset.GetType() == type)
+				if (asset != null && type.IsInstanceOfType(asset))
 					return asset;
 			}
 

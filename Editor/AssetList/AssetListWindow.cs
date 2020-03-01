@@ -158,94 +158,12 @@ namespace Vertx.Editor
 				foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
 				{
 					var columnTitleContent = new GUIContent(c.Title);
-					float minWidth;
-					switch (c.PropertyType)
-					{
-						case SerializedPropertyType.Float:
-						case SerializedPropertyType.Integer:
-							contexts.Add(new ColumnContext(
-								c.PropertyPath,
-								c.NumericalDisplay
-							));
-							switch (c.NumericalDisplay)
-							{
-								case NumericalPropertyDisplay.ReadonlyProgressBar:
-								case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
-									minWidth = 150;
-									break;
-								default:
-									minWidth = 50;
-									break;
-							}
-
-							break;
-						case SerializedPropertyType.Enum:
-							contexts.Add(new ColumnContext(
-								c.PropertyPath,
-								c.EnumDisplay
-							));
-							switch (c.EnumDisplay)
-							{
-								case EnumPropertyDisplay.Property:
-								case EnumPropertyDisplay.ReadonlyProperty:
-									minWidth = 150;
-									break;
-								case EnumPropertyDisplay.ReadonlyLabel:
-									minWidth = 80;
-									break;
-								default:
-									throw new ArgumentOutOfRangeException();
-							}
-
-							break;
-						case SerializedPropertyType.String:
-							minWidth = 150;
-							contexts.Add(new ColumnContext(
-								c.PropertyPath,
-								c.StringDisplay
-							));
-							break;
-						case SerializedPropertyType.Color:
-							minWidth = 150;
-							contexts.Add(new ColumnContext(
-								c.PropertyPath,
-								c.ColorDisplay
-							));
-							break;
-						case SerializedPropertyType.Generic:
-						case SerializedPropertyType.Boolean:
-						case SerializedPropertyType.ObjectReference:
-						case SerializedPropertyType.LayerMask:
-						case SerializedPropertyType.Vector2:
-						case SerializedPropertyType.Vector3:
-						case SerializedPropertyType.Vector4:
-						case SerializedPropertyType.Rect:
-						case SerializedPropertyType.ArraySize:
-						case SerializedPropertyType.Character:
-						case SerializedPropertyType.AnimationCurve:
-						case SerializedPropertyType.Bounds:
-						case SerializedPropertyType.Gradient:
-						case SerializedPropertyType.Quaternion:
-						case SerializedPropertyType.ExposedReference:
-						case SerializedPropertyType.FixedBufferSize:
-						case SerializedPropertyType.Vector2Int:
-						case SerializedPropertyType.Vector3Int:
-						case SerializedPropertyType.RectInt:
-						case SerializedPropertyType.BoundsInt:
-						case SerializedPropertyType.ManagedReference:
-						default:
-							minWidth = 200;
-							contexts.Add(new ColumnContext(
-								c.PropertyPath,
-								GUIType.Property
-							));
-							break;
-					}
+					contexts.Add(new ColumnContext(c));
 
 					columns.Add(new MultiColumnHeaderState.Column
 					{
 						headerContent = new GUIContent(columnTitleContent),
-						minWidth = minWidth,
+						minWidth = AssetListUtility.GetMinWidth(c),
 						autoResize = false
 					});
 				}

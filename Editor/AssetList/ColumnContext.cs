@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -56,10 +57,18 @@ namespace Vertx.Editor
 		ReadonlySimplifiedHDR
 	}
 
+	internal enum ObjectPropertyDisplay
+	{
+		Property,
+		ReadonlyProperty,
+		ReadonlyLabelWithIcon
+	}
+
 	internal class ColumnContext
 	{
 		private readonly string propertyPath;
-		private readonly Action<Rect, SerializedProperty> onGUI;
+		private Action<Rect, SerializedProperty> onGUI;
+		private readonly Func<SerializedObject, SerializedProperty> getPropertyOverride;
 
 		public ColumnContext(string propertyPath, string iconPropertyName, NamePropertyDisplay nameDisplay, AssetListWindow window)
 		{
@@ -83,125 +92,212 @@ namespace Vertx.Editor
 			}
 		}
 
-		public ColumnContext(string propertyPath, GUIType guiType)
+		public ColumnContext(AssetListConfiguration.ColumnConfiguration c)
 		{
-			this.propertyPath = propertyPath;
-			switch (guiType)
+			propertyPath = c.PropertyPath;
+			if (!c.IsArray)
 			{
-				case GUIType.Property:
-					onGUI = Property;
-					break;
-				case GUIType.ReadonlyProperty:
-					onGUI = ReadonlyProperty;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(guiType), guiType, null);
+				ConfigureGUI(c.PropertyType);
+				return;
 			}
-		}
 
-		public ColumnContext(string propertyPath, NumericalPropertyDisplay numericalDisplay)
-		{
-			this.propertyPath = propertyPath;
-			switch (numericalDisplay)
+			void ConfigureGUI(SerializedPropertyType propertyType)
 			{
-				case NumericalPropertyDisplay.Property:
-					onGUI = Property;
-					break;
-				case NumericalPropertyDisplay.ReadonlyProperty:
-					onGUI = ReadonlyProperty;
-					break;
-				case NumericalPropertyDisplay.ReadonlyLabel:
-					onGUI = NumericalProperty;
-					break;
-				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
-					onGUI = NumericalPropertyPercentage;
-					break;
-				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
-					onGUI = NumericalPropertyPercentageNormalised;
-					break;
-				case NumericalPropertyDisplay.ReadonlyProgressBar:
-					onGUI = NumericalPropertyProgressBar;
-					break;
-				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
-					onGUI = NumericalPropertyProgressBarNormalised;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(numericalDisplay), numericalDisplay, null);
-			}
-		}
+				switch (propertyType)
+				{
+					case SerializedPropertyType.Float:
+					case SerializedPropertyType.Integer:
+						switch (c.NumericalDisplay)
+						{
+							case NumericalPropertyDisplay.Property:
+								onGUI = Property;
+								break;
+							case NumericalPropertyDisplay.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							case NumericalPropertyDisplay.ReadonlyLabel:
+								onGUI = NumericalProperty;
+								break;
+							case NumericalPropertyDisplay.ReadonlyPercentageLabel:
+								onGUI = NumericalPropertyPercentage;
+								break;
+							case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
+								onGUI = NumericalPropertyPercentageNormalised;
+								break;
+							case NumericalPropertyDisplay.ReadonlyProgressBar:
+								onGUI = NumericalPropertyProgressBar;
+								break;
+							case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+								onGUI = NumericalPropertyProgressBarNormalised;
+								break;
+							default:
+								throw new ArgumentOutOfRangeException(nameof(c.NumericalDisplay), c.NumericalDisplay, null);
+						}
 
-		public ColumnContext(string propertyPath, EnumPropertyDisplay enumDisplay)
-		{
-			this.propertyPath = propertyPath;
-			switch (enumDisplay)
-			{
-				case EnumPropertyDisplay.Property:
-					onGUI = Property;
-					break;
-				case EnumPropertyDisplay.ReadonlyProperty:
-					onGUI = ReadonlyProperty;
-					break;
-				case EnumPropertyDisplay.ReadonlyLabel:
-					onGUI = ReadonlyEnumProperty;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(enumDisplay), enumDisplay, null);
-			}
-		}
+						break;
+					case SerializedPropertyType.Enum:
+						switch (c.EnumDisplay)
+						{
+							case EnumPropertyDisplay.Property:
+								onGUI = Property;
+								break;
+							case EnumPropertyDisplay.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							case EnumPropertyDisplay.ReadonlyLabel:
+								onGUI = ReadonlyEnumProperty;
+								break;
+							default:
+								throw new ArgumentOutOfRangeException(nameof(c.EnumDisplay), c.EnumDisplay, null);
+						}
 
-		public ColumnContext(string propertyPath, StringPropertyDisplay stringDisplay)
-		{
-			this.propertyPath = propertyPath;
-			switch (stringDisplay)
-			{
-				case StringPropertyDisplay.Property:
-					onGUI = Property;
-					break;
-				case StringPropertyDisplay.ReadonlyProperty:
-					onGUI = ReadonlyProperty;
-					break;
-				case StringPropertyDisplay.ReadonlyLabel:
-					onGUI = (rect, property) => GUI.Label(rect, property.stringValue);
-					break;
-				case StringPropertyDisplay.ReadonlyNicifiedLabel:
-					onGUI = (rect, property) => ReadonlyNicifiedLabelProperty(rect, property.stringValue);
-					break;
-				case StringPropertyDisplay.ReadonlyCenteredLabel:
-					onGUI = (rect, property) => ReadonlyCenteredLabelProperty(rect, property.stringValue);
-					break;
-				case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
-					onGUI = (rect, property) => ReadonlyNicifiedCenteredLabelProperty(rect, property.stringValue);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(stringDisplay), stringDisplay, null);
-			}
-		}
+						break;
+					case SerializedPropertyType.String:
+						switch (c.StringDisplay)
+						{
+							case StringPropertyDisplay.Property:
+								onGUI = Property;
+								break;
+							case StringPropertyDisplay.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							case StringPropertyDisplay.ReadonlyLabel:
+								onGUI = (rect, property) => GUI.Label(rect, property.stringValue);
+								break;
+							case StringPropertyDisplay.ReadonlyNicifiedLabel:
+								onGUI = (rect, property) => ReadonlyNicifiedLabelProperty(rect, property.stringValue);
+								break;
+							case StringPropertyDisplay.ReadonlyCenteredLabel:
+								onGUI = (rect, property) => ReadonlyCenteredLabelProperty(rect, property.stringValue);
+								break;
+							case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
+								onGUI = (rect, property) => ReadonlyNicifiedCenteredLabelProperty(rect, property.stringValue);
+								break;
+							default:
+								throw new ArgumentOutOfRangeException(nameof(c.StringDisplay), c.StringDisplay, null);
+						}
 
-		public ColumnContext(string propertyPath, ColorPropertyDisplay colorDisplay)
-		{
-			this.propertyPath = propertyPath;
-			switch (colorDisplay)
+						break;
+					case SerializedPropertyType.Color:
+						switch (c.ColorDisplay)
+						{
+							case ColorPropertyDisplay.Property:
+								onGUI = Property;
+								break;
+							case ColorPropertyDisplay.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							case ColorPropertyDisplay.ReadonlySimplified:
+								onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, false);
+								break;
+							case ColorPropertyDisplay.ReadonlySimplifiedHDR:
+								onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, true);
+								break;
+							default:
+								throw new ArgumentOutOfRangeException(nameof(c.ColorDisplay), c.ColorDisplay, null);
+						}
+
+						break;
+					case SerializedPropertyType.ObjectReference:
+						switch (c.ObjectDisplay)
+						{
+							case ObjectPropertyDisplay.Property:
+								onGUI = Property;
+								break;
+							case ObjectPropertyDisplay.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							case ObjectPropertyDisplay.ReadonlyLabelWithIcon:
+								onGUI = (rect, property) =>
+								{
+									if (property.objectReferenceValue == null)
+										GUI.Label(rect, "Null");
+									else
+										GUI.Label(rect, EditorGUIUtility.ObjectContent(property.objectReferenceValue, null));
+								};
+								break;
+							default:
+								throw new ArgumentOutOfRangeException(nameof(c.ObjectDisplay), c.ObjectDisplay, null);
+						}
+
+						break;
+					case SerializedPropertyType.Generic:
+						throw new NotImplementedException($"{SerializedPropertyType.Generic} is not supported without being an array.");
+					case SerializedPropertyType.Boolean:
+					case SerializedPropertyType.LayerMask:
+					case SerializedPropertyType.Vector2:
+					case SerializedPropertyType.Vector3:
+					case SerializedPropertyType.Vector4:
+					case SerializedPropertyType.Rect:
+					case SerializedPropertyType.ArraySize:
+					case SerializedPropertyType.Character:
+					case SerializedPropertyType.AnimationCurve:
+					case SerializedPropertyType.Bounds:
+					case SerializedPropertyType.Gradient:
+					case SerializedPropertyType.Quaternion:
+					case SerializedPropertyType.ExposedReference:
+					case SerializedPropertyType.FixedBufferSize:
+					case SerializedPropertyType.Vector2Int:
+					case SerializedPropertyType.Vector3Int:
+					case SerializedPropertyType.RectInt:
+					case SerializedPropertyType.BoundsInt:
+					case SerializedPropertyType.ManagedReference:
+					default:
+						onGUI = Property;
+						break;
+				}
+			}
+
+			// Configuration for an array property -------------------------------
+
+			Func<SerializedProperty, SerializedProperty> getProperty;
+			var propInfo = c.ArrayPropertyInformation;
+			switch (propInfo.ArrayIndexing)
 			{
-				case ColorPropertyDisplay.Property:
-					onGUI = Property;
+				case ArrayIndexing.First:
+					getProperty = arrayProperty => arrayProperty.arraySize == 0 ? null : arrayProperty.GetArrayElementAtIndex(0);
 					break;
-				case ColorPropertyDisplay.ReadonlyProperty:
-					onGUI = ReadonlyProperty;
+				case ArrayIndexing.ByKey:
+					Regex regex = new Regex(propInfo.ArrayQuery);
+					string arrayPropertyKey = propInfo.ArrayPropertyKey;
+					string arrayPropertyPath = propInfo.ArrayPropertyPath;
+					getProperty = arrayProperty =>
+					{
+						if (arrayProperty == null) return null;
+						for (int i = 0; i < arrayProperty.arraySize; i++)
+						{
+							SerializedProperty property = arrayProperty.GetArrayElementAtIndex(i);
+							SerializedProperty key = property.FindPropertyRelative(arrayPropertyKey);
+
+							string keyForRegex = AssetListUtility.GetValueForRegex(key);
+							if (!regex.IsMatch(keyForRegex)) continue;
+
+							return property.FindPropertyRelative(arrayPropertyPath);
+						}
+
+						return null;
+					};
 					break;
-				case ColorPropertyDisplay.ReadonlySimplified:
-					onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, false);
-					break;
-				case ColorPropertyDisplay.ReadonlySimplifiedHDR:
-					onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, true);
+				case ArrayIndexing.ByIndex:
+					int index = propInfo.ArrayIndex;
+					getProperty = arrayProperty => arrayProperty.arraySize <= index ? null : arrayProperty.GetArrayElementAtIndex(index);
 					break;
 				default:
-					throw new ArgumentOutOfRangeException(nameof(colorDisplay), colorDisplay, null);
+					throw new ArgumentOutOfRangeException();
 			}
+
+			getPropertyOverride = context =>
+			{
+				SerializedProperty property = context.FindProperty(propertyPath);
+				return getProperty.Invoke(property);
+			};
+
+			ConfigureGUI(propInfo.ArrayPropertyType);
 		}
 
 		public void OnGUI(Rect cellRect, SerializedProperty @object) => onGUI?.Invoke(cellRect, @object);
 
-		public SerializedProperty GetValue(SerializedObject context) => context.FindProperty(propertyPath);
+		public SerializedProperty GetValue(SerializedObject context) => getPropertyOverride != null ? getPropertyOverride(context) : context.FindProperty(propertyPath);
 
 		public object GetSortableValue(SerializedObject context)
 		{
@@ -220,12 +316,12 @@ namespace Vertx.Editor
 
 		#region Default GUIs
 
-		private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, true);
+		private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, false);
 
 		private static void ReadonlyProperty(Rect r, SerializedProperty p)
 		{
 			using (new EditorGUI.DisabledScope(true))
-				EditorGUI.PropertyField(r, p, GUIContent.none, true);
+				EditorGUI.PropertyField(r, p, GUIContent.none, false);
 		}
 
 		private static void LargeObjectLabelWithPing(

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -142,14 +143,82 @@ namespace Vertx.Editor
 					return values;
 			}
 
+			HashSet<string> loadedPaths = new HashSet<string>();
 			foreach (string guid in guids)
 			{
-				var asset = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guid));
-				if (asset != null)
-					values.Add(asset);
+				string path = AssetDatabase.GUIDToAssetPath(guid);
+				if(loadedPaths.Contains(path))
+					continue;
+				loadedPaths.Add(path);
+				var asset = AssetDatabase.LoadAllAssetsAtPath(path);
+				foreach (Object o in asset)
+				{
+					if(type.IsInstanceOfType(o))
+						values.Add(o);
+				}
 			}
 
 			return values;
+		}
+		
+		public static string GetValueForRegex(SerializedProperty property)
+		{
+			switch (property.propertyType)
+			{
+				case SerializedPropertyType.Integer:
+					return property.intValue.ToString();
+				case SerializedPropertyType.Boolean:
+					return property.boolValue.ToString();
+				case SerializedPropertyType.Float:
+					return property.floatValue.ToString();
+				case SerializedPropertyType.String:
+					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
+						return property.serializedObject.targetObject.name;
+					return property.stringValue;
+				case SerializedPropertyType.ObjectReference:
+					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
+				case SerializedPropertyType.LayerMask:
+					return property.enumDisplayNames[property.intValue];
+				case SerializedPropertyType.Enum:
+					return property.enumDisplayNames[property.intValue];
+				case SerializedPropertyType.ArraySize:
+					return property.arraySize.ToString();
+				case SerializedPropertyType.Character:
+					return property.stringValue;
+				//Values below this point are sorted completely arbitrarily
+				case SerializedPropertyType.Color:
+					return property.colorValue.ToString();
+				case SerializedPropertyType.Vector2:
+					return property.vector2Value.ToString();
+				case SerializedPropertyType.Vector3:
+					return property.vector3Value.ToString();
+				case SerializedPropertyType.Vector4:
+					return property.vector4Value.ToString();
+				case SerializedPropertyType.Quaternion:
+					return property.quaternionValue.eulerAngles.ToString();
+				case SerializedPropertyType.FixedBufferSize:
+					return property.fixedBufferSize.ToString();
+				case SerializedPropertyType.Vector2Int:
+					return property.vector2IntValue.ToString();
+				case SerializedPropertyType.Vector3Int:
+					return property.vector3IntValue.ToString();
+				case SerializedPropertyType.Rect:
+					return property.rectValue.ToString();
+				case SerializedPropertyType.RectInt:
+					return property.rectIntValue.ToString();
+				case SerializedPropertyType.Bounds:
+					return property.boundsValue.ToString();
+				case SerializedPropertyType.BoundsInt:
+					return property.boundsIntValue.ToString();
+				case SerializedPropertyType.ExposedReference:
+					return property.exposedReferenceValue.name;
+				case SerializedPropertyType.AnimationCurve:
+				case SerializedPropertyType.ManagedReference:
+				case SerializedPropertyType.Gradient:
+				case SerializedPropertyType.Generic:
+				default:
+					throw new ArgumentOutOfRangeException($"{property.propertyType} is not supported by {nameof(GetValueForRegex)}");
+			}
 		}
 
 		public static object GetSortableValue(SerializedProperty property)
@@ -211,6 +280,80 @@ namespace Vertx.Editor
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
+		}
+
+		public static float GetMinWidth(AssetListConfiguration.ColumnConfiguration column)
+		{
+			SerializedPropertyType propertyType = column.IsArray ? column.ArrayPropertyInformation.ArrayPropertyType : column.PropertyType;
+			
+			float minWidth;
+			switch (propertyType)
+			{
+				case SerializedPropertyType.Float:
+				case SerializedPropertyType.Integer:
+					switch (column.NumericalDisplay)
+					{
+						case NumericalPropertyDisplay.ReadonlyProgressBar:
+						case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+							minWidth = 150;
+							break;
+						default:
+							minWidth = 50;
+							break;
+					}
+
+					break;
+				case SerializedPropertyType.Enum:
+					switch (column.EnumDisplay)
+					{
+						case EnumPropertyDisplay.Property:
+						case EnumPropertyDisplay.ReadonlyProperty:
+							minWidth = 150;
+							break;
+						case EnumPropertyDisplay.ReadonlyLabel:
+							minWidth = 80;
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+
+					break;
+				case SerializedPropertyType.String:
+					minWidth = 150;
+					break;
+				case SerializedPropertyType.Color:
+					minWidth = 150;
+					break;
+				case SerializedPropertyType.ObjectReference:
+					minWidth = 180;
+					break;
+				case SerializedPropertyType.Generic:
+					throw new ArgumentException($"Generic Property Types cannot be accepted by the {nameof(GetMinWidth)} function.");
+				case SerializedPropertyType.Boolean:
+				case SerializedPropertyType.LayerMask:
+				case SerializedPropertyType.Vector2:
+				case SerializedPropertyType.Vector3:
+				case SerializedPropertyType.Vector4:
+				case SerializedPropertyType.Rect:
+				case SerializedPropertyType.ArraySize:
+				case SerializedPropertyType.Character:
+				case SerializedPropertyType.AnimationCurve:
+				case SerializedPropertyType.Bounds:
+				case SerializedPropertyType.Gradient:
+				case SerializedPropertyType.Quaternion:
+				case SerializedPropertyType.ExposedReference:
+				case SerializedPropertyType.FixedBufferSize:
+				case SerializedPropertyType.Vector2Int:
+				case SerializedPropertyType.Vector3Int:
+				case SerializedPropertyType.RectInt:
+				case SerializedPropertyType.BoundsInt:
+				case SerializedPropertyType.ManagedReference:
+				default:
+					minWidth = 200;
+					break;
+			}
+
+			return minWidth;
 		}
 
 		public static void DrawTextureInRect(Rect r, Texture texture)

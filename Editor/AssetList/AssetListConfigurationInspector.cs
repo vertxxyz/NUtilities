@@ -36,9 +36,7 @@ namespace Vertx.Editor
 			addLabel = new GUIContent("Add Column"),
 			cancelLabel = new GUIContent("Cancel"),
 			referenceObjectLabel = new GUIContent("Reference Object", "This object is used to gather Serialized Properties for column creation."),
-			searchlabel = new GUIContent("Serialized Property Search"),
-			addArrayKeyLabel = new GUIContent("Add Key", "Find a Serialized Property to use as a key into the above array property."),
-			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", "Find a Serialized Property to draw if the key's query has passed.");
+			searchlabel = new GUIContent("Serialized Property Search");
 
 		[SerializeField]
 		private AdvancedDropdownState propertyDropdownState;
@@ -57,20 +55,6 @@ namespace Vertx.Editor
 
 		private RectOffset backgroundOffset;
 
-		private struct PropertyData
-		{
-			public SerializedPropertyType Type;
-			public bool IsArray;
-			public bool IsInConfiguration;
-
-			public PropertyData(AssetListConfiguration configuration, SerializedProperty property)
-			{
-				Type = property.propertyType;
-				IsArray = property.isArray;
-				IsInConfiguration = configuration.Columns.Any(c => c.PropertyPath.Equals(property.propertyPath));
-			}
-		}
-		
 		private readonly Dictionary<int, float> heightOverrideLookup = new Dictionary<int, float>();
 		
 		protected override void OnEnable()
@@ -109,144 +93,109 @@ namespace Vertx.Editor
 					var propertyType = (SerializedPropertyType) column.FindPropertyRelative("PropertyType").intValue;
 
 					string propertyName = null;
-					switch (propertyType)
+					bool captureHeight = false;
+					bool repeat;
+					do
 					{
-						case SerializedPropertyType.Generic:
-							/*
-							bool IsArray;
-							ArrayIndexing ArrayIndexing;
-							string ArrayPropertyKey;
-							string ArrayQuery;
-							int ArrayIndex;
-							string ArrayPropertyPath;
-							*/
-							bool isArray = column.FindPropertyRelative("IsArray").boolValue;
-							if (isArray)
-							{
-								SerializedProperty indexing = column.FindPropertyRelative("ArrayIndexing");
-								rect.NextGUIRect();
-								EditorGUI.PropertyField(rect, indexing);
-								switch ((ArrayIndexing)indexing.intValue)
+						repeat = false;
+						switch (propertyType)
+						{
+							case SerializedPropertyType.Generic:
+								/*
+								bool IsArray;
+								ArrayIndexing ArrayIndexing;
+								string ArrayPropertyKey;
+								string ArrayQuery;
+								int ArrayIndex;
+								string ArrayPropertyPath;
+								*/
+								captureHeight = true;
+								bool isArray = column.FindPropertyRelative("IsArray").boolValue;
+								if (isArray)
 								{
-									case ArrayIndexing.First:
-										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
-											break;
-										DrawDrawingProperty();
-										break;
-									case ArrayIndexing.ByKey:
-										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
-											break;
-										
-										//The property to look for as a key. This is associated with the query.
-										rect.NextGUIRect();
-										SerializedProperty key = column.FindPropertyRelative("ArrayPropertyKey");
-										using(new EditorGUI.DisabledScope(true))
-											EditorGUI.PropertyField(rect, key);
-										rect.NextGUIRect();
-										if (GUI.Button(rect, addArrayKeyLabel))
-											DisplayArrayKeyPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
+									var arrayPropertyInformation = column.FindPropertyRelative("ArrayPropertyInformation");
 
-										//The query into the array. This is associated with the array property key.
-										if (!string.IsNullOrEmpty(key.stringValue))
-										{
-											rect.NextGUIRect();
-											SerializedProperty arrayQuery = column.FindPropertyRelative("ArrayQuery");
-											EditorGUI.PropertyField(rect, arrayQuery);
-
-											//The property to draw if the query has passed.
-											if (!string.IsNullOrEmpty(arrayQuery.stringValue))
-											{
-												DrawDrawingProperty();
-											}
-										}
-										
-										break;
-									case ArrayIndexing.ByIndex:
-										rect.NextGUIRect();
-										EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayIndex"));
-										if(!ValidateReferenceObjectWithHelpWarningRect(ref rect))
-											break;
-										DrawDrawingProperty();
-										break;
-									default:
-										throw new ArgumentOutOfRangeException();
+									ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject);
+									
+									var arrayPropertyPath = arrayPropertyInformation.FindPropertyRelative("ArrayPropertyPath");
+									if (!string.IsNullOrEmpty(arrayPropertyPath.stringValue))
+									{
+										propertyType = (SerializedPropertyType) arrayPropertyInformation.FindPropertyRelative("ArrayPropertyType").intValue;
+										repeat = true;
+									}
 								}
 
-								void DrawDrawingProperty()
-								{
-									rect.NextGUIRect();
-									using(new EditorGUI.DisabledScope(true))
-										EditorGUI.PropertyField(rect, column.FindPropertyRelative("ArrayPropertyPath"));
-									rect.NextGUIRect();
-									if (GUI.Button(rect, addDrawingPropertyLabel))
-										DisplayArrayDrawingPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", column);
-								}
-								
-								if (heightOverrideLookup.ContainsKey(index))
-									heightOverrideLookup[index] = rect.yMax - min;
-								else
-									heightOverrideLookup.Add(index, rect.yMax - min);
-							}
-							break;
-						case SerializedPropertyType.Integer:
-						case SerializedPropertyType.Float:
-							propertyName = "NumericalDisplay";
-							break;
-						case SerializedPropertyType.Boolean:
-							break;
-						case SerializedPropertyType.String:
-							break;
-						case SerializedPropertyType.Color:
-							propertyName = "ColorDisplay";
-							break;
-						case SerializedPropertyType.ObjectReference:
-							break;
-						case SerializedPropertyType.LayerMask:
-						case SerializedPropertyType.Enum:
-							propertyName = "EnumDisplay";
-							break;
-						case SerializedPropertyType.Vector2:
-							break;
-						case SerializedPropertyType.Vector3:
-							break;
-						case SerializedPropertyType.Vector4:
-							break;
-						case SerializedPropertyType.Rect:
-							break;
-						case SerializedPropertyType.ArraySize:
-							break;
-						case SerializedPropertyType.Character:
-							break;
-						case SerializedPropertyType.AnimationCurve:
-							break;
-						case SerializedPropertyType.Bounds:
-							break;
-						case SerializedPropertyType.Gradient:
-							break;
-						case SerializedPropertyType.Quaternion:
-							break;
-						case SerializedPropertyType.ExposedReference:
-							break;
-						case SerializedPropertyType.FixedBufferSize:
-							break;
-						case SerializedPropertyType.Vector2Int:
-							break;
-						case SerializedPropertyType.Vector3Int:
-							break;
-						case SerializedPropertyType.RectInt:
-							break;
-						case SerializedPropertyType.BoundsInt:
-							break;
-						case SerializedPropertyType.ManagedReference:
-							break;
-						default:
-							throw new ArgumentOutOfRangeException();
-					}
+								break;
+							case SerializedPropertyType.Integer:
+							case SerializedPropertyType.Float:
+								propertyName = "NumericalDisplay";
+								break;
+							case SerializedPropertyType.Boolean:
+								break;
+							case SerializedPropertyType.String:
+								propertyName = "StringDisplay";
+								break;
+							case SerializedPropertyType.Color:
+								propertyName = "ColorDisplay";
+								break;
+							case SerializedPropertyType.ObjectReference:
+								propertyName = "ObjectDisplay";
+								break;
+							case SerializedPropertyType.LayerMask:
+							case SerializedPropertyType.Enum:
+								propertyName = "EnumDisplay";
+								break;
+							case SerializedPropertyType.Vector2:
+								break;
+							case SerializedPropertyType.Vector3:
+								break;
+							case SerializedPropertyType.Vector4:
+								break;
+							case SerializedPropertyType.Rect:
+								break;
+							case SerializedPropertyType.ArraySize:
+								break;
+							case SerializedPropertyType.Character:
+								break;
+							case SerializedPropertyType.AnimationCurve:
+								break;
+							case SerializedPropertyType.Bounds:
+								break;
+							case SerializedPropertyType.Gradient:
+								break;
+							case SerializedPropertyType.Quaternion:
+								break;
+							case SerializedPropertyType.ExposedReference:
+								break;
+							case SerializedPropertyType.FixedBufferSize:
+								break;
+							case SerializedPropertyType.Vector2Int:
+								break;
+							case SerializedPropertyType.Vector3Int:
+								break;
+							case SerializedPropertyType.RectInt:
+								break;
+							case SerializedPropertyType.BoundsInt:
+								break;
+							case SerializedPropertyType.ManagedReference:
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+					} while (repeat);
 
 					if (propertyName != null)
 					{
 						rect.NextGUIRect();
 						EditorGUI.PropertyField(rect, column.FindPropertyRelative(propertyName));
+					}
+
+					if (captureHeight)
+					{
+						if (heightOverrideLookup.ContainsKey(index))
+							heightOverrideLookup[index] = rect.yMax - min;
+						else
+							heightOverrideLookup.Add(index, rect.yMax - min);
 					}
 				},
 				headerHeight = 0,
@@ -260,10 +209,11 @@ namespace Vertx.Editor
 				displayAdd = false,
 				onRemoveCallback = list =>
 				{
-					ReorderableList.defaultBehaviours.DoRemoveButton(list);
 					//Refresh property dropdown (this currently is only done to refresh the "enabled" state of the properties)
+					propertyDropdownState = null;
 					CreatePropertyDropdown();
 					heightOverrideLookup.Clear();
+					ReorderableList.defaultBehaviours.DoRemoveButton(list);
 				}
 			};
 
@@ -315,7 +265,7 @@ namespace Vertx.Editor
 				{
 					if (!string.IsNullOrEmpty(iconPropertyPath.stringValue))
 						EditorGUILayout.PropertyField(iconPropertyPath, GUIContent.none);
-					if (ValidateReferenceObjectWithHelpWarning())
+					if (ValidateReferenceObjectWithHelpWarning(referenceObject))
 					{
 						Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
 						rect.xMin += EditorGUI.indentLevel * 15;
@@ -341,7 +291,7 @@ namespace Vertx.Editor
 			using (new EditorGUIExtensions.OutlineScope())
 			{
 				GUILayout.Label(searchlabel, EditorStyles.boldLabel);
-				if (ValidateReferenceObjectWithHelpWarning())
+				if (ValidateReferenceObjectWithHelpWarning(referenceObject))
 				{
 					Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
 					if (GUI.Button(rect, addLabel))
@@ -354,7 +304,7 @@ namespace Vertx.Editor
 
 		private const string referenceObjectMissingWarning = "A reference Object is required to search for Serialized Properties.";
 		
-		bool ValidateReferenceObjectWithHelpWarning()
+		public static bool ValidateReferenceObjectWithHelpWarning(Object referenceObject)
 		{
 			if (referenceObject != null)
 				return true;
@@ -362,7 +312,7 @@ namespace Vertx.Editor
 			return false;
 		}
 		
-		bool ValidateReferenceObjectWithHelpWarningRect(ref Rect rect)
+		public static bool ValidateReferenceObjectWithHelpWarningRect(Object referenceObject, ref Rect rect)
 		{
 			if (referenceObject != null)
 				return true;
@@ -491,56 +441,6 @@ namespace Vertx.Editor
 			}
 		}
 
-		private void DisplayArrayKeyPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column)
-		{
-			HashSet<string> propertyPaths = new HashSet<string>();
-
-			var iterator = new ScriptableObjectPropertyIterator(referenceObject, propertyPath);
-			if (!iterator.IsValid())
-			{
-				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
-				return;
-			}
-			
-			foreach (SerializedProperty property in iterator)
-			{
-				if(!IsValidPropertyKeyType(property.propertyType)) continue;
-				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1));// + 1 to skip the '.'
-			}
-
-			PropertyDropdown dropdown = new PropertyDropdown(new AdvancedDropdownState(), s =>
-			{
-				column.FindPropertyRelative("ArrayPropertyKey").stringValue = s;
-				column.serializedObject.ApplyModifiedProperties();
-			}, propertyPaths, null);
-			dropdown.Show(rect);
-		}
-		
-		private void DisplayArrayDrawingPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column)
-		{
-			HashSet<string> propertyPaths = new HashSet<string>();
-
-			var iterator = new ScriptableObjectPropertyIterator(referenceObject, propertyPath);
-			if (!iterator.IsValid())
-			{
-				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
-				return;
-			}
-			
-			foreach (SerializedProperty property in iterator)
-			{
-				if(property.propertyType == SerializedPropertyType.Generic) continue;
-				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1));// + 1 to skip the '.'
-			}
-
-			PropertyDropdown dropdown = new PropertyDropdown(new AdvancedDropdownState(), s =>
-			{
-				column.FindPropertyRelative("ArrayPropertyPath").stringValue = s;
-				column.serializedObject.ApplyModifiedProperties();
-			}, propertyPaths, null);
-			dropdown.Show(rect);
-		}
-
 		private class ScriptableObjectIterator : IEnumerable<SerializedProperty>
 		{
 			private readonly SerializedObject serializedObject;
@@ -565,159 +465,6 @@ namespace Vertx.Editor
 			}
 
 			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-		}
-		
-		private class ScriptableObjectPropertyIterator : IEnumerable<SerializedProperty>
-		{
-			private readonly SerializedObject serializedObject;
-			private readonly SerializedProperty prop;
-
-			public ScriptableObjectPropertyIterator(Object referenceObject, string parentPropertyPath)
-			{
-				serializedObject = new SerializedObject(referenceObject);
-				typeof(SerializedObject).GetProperty("inspectorMode", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(serializedObject, 1);
-				prop = serializedObject.FindProperty(parentPropertyPath);
-			}
-
-			public bool IsValid() => prop != null;
-
-			public IEnumerator<SerializedProperty> GetEnumerator()
-			{
-				SerializedProperty end = prop.GetEndProperty();
-				while (prop.NextVisible(true) && !SerializedProperty.EqualContents(prop, end))
-					yield return prop;
-				serializedObject.Dispose();
-			}
-
-			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-		}
-
-		private class PropertyDropdown : AdvancedDropdown
-		{
-			private readonly Action<string> itemSelected;
-			private readonly HashSet<string> propertyPaths;
-			private readonly Dictionary<string, PropertyData> propertyLookup;
-			private readonly Dictionary<int, string> pathLookup = new Dictionary<int, string>();
-
-			public PropertyDropdown(AdvancedDropdownState state, Action<string> itemSelected, HashSet<string> propertyPaths, Dictionary<string, PropertyData> propertyLookup) : base(state)
-			{
-				this.itemSelected = itemSelected;
-				this.propertyPaths = propertyPaths;
-				this.propertyLookup = propertyLookup;
-				minimumSize = new Vector2(200, 300);
-			}
-
-			protected override void ItemSelected(AdvancedDropdownItem item)
-			{
-				if (!pathLookup.TryGetValue(item.id, out var propPath))
-				{
-					Debug.LogError($"{item.name} has no type lookup.");
-					return;
-				}
-
-				itemSelected.Invoke(propPath);
-			}
-
-			private static string GetName(string path)
-			{
-				int indexOfSeparator = path.LastIndexOf('/');
-				if (indexOfSeparator < 0 || indexOfSeparator == path.Length - 1)
-					return path;
-				return path.Substring(indexOfSeparator + 1);
-			}
-
-			protected override AdvancedDropdownItem BuildRoot()
-			{
-				pathLookup.Clear();
-				var root = new AdvancedDropdownItem("Serialized Property Search");
-
-
-				Dictionary<string, AdvancedDropdownItem> dropdownItemsDict = new Dictionary<string, AdvancedDropdownItem>();
-
-				foreach (var propertyPath in propertyPaths)
-				{
-					var path = propertyPath;
-					AdvancedDropdownItem dropdownItem = root;
-					string name = GetName(path);
-
-					//If there is a path attribute
-					if (!string.IsNullOrEmpty(path))
-					{
-						AdvancedDropdownItem depthFirst = null;
-						string menuPath = null;
-						do
-						{
-							//Get the menu path and name---------
-							int lastSeparator = path.LastIndexOf('/');
-							if (lastSeparator < 0)
-							{
-								//If the menu path is no longer a path, add it to the root.
-								if (string.IsNullOrEmpty(menuPath))
-									menuPath = path;
-								AdvancedDropdownItem baseDropDownItem = new AdvancedDropdownItem(
-									ObjectNames.NicifyVariableName(menuPath)
-								);
-								if (propertyLookup?[propertyPath].IsInConfiguration ?? false)
-									baseDropDownItem.enabled = false;
-								if (depthFirst != null)
-									baseDropDownItem.AddChild(depthFirst);
-								else
-								{
-									pathLookup.Add(baseDropDownItem.id, path);
-									baseDropDownItem.icon = GetIcon(path);
-								}
-
-								root.AddChild(baseDropDownItem);
-								break;
-							}
-
-							menuPath = path.Substring(0, lastSeparator);
-							name = ObjectNames.NicifyVariableName(path.Substring(lastSeparator + 1));
-							//------------------------------------
-
-							if (string.IsNullOrEmpty(menuPath))
-							{
-								Debug.LogError($"{path} was not a valid path for this method.");
-								break;
-							}
-
-							AdvancedDropdownItem newDropDownItem = new AdvancedDropdownItem(name);
-							if (propertyLookup?[propertyPath].IsInConfiguration ?? false)
-							{
-								newDropDownItem.enabled = false;
-							}
-
-							if (depthFirst != null)
-								newDropDownItem.AddChild(depthFirst);
-							else
-							{
-								pathLookup.Add(newDropDownItem.id, path);
-								newDropDownItem.icon = GetIcon(path);
-							}
-
-							depthFirst = newDropDownItem;
-							dropdownItemsDict.Add(path, newDropDownItem);
-							path = menuPath;
-						} while (!dropdownItemsDict.TryGetValue(menuPath, out dropdownItem));
-
-						continue;
-					}
-
-					dropdownItem.AddChild(new AdvancedDropdownItem(name));
-				}
-
-				return root;
-
-				Texture2D GetIcon(string p)
-				{
-					return EditorGUIUtility.FindTexture("cs Script Icon");
-
-					/*Texture2D icon = EditorGUIUtility.ObjectContent(null, t).image as Texture2D;
-					if(icon == null || icon.name.StartsWith("DefaultAsset"))
-						icon = EditorGUIUtility.FindTexture("cs Script Icon");
-					return icon;*/
-				}
-			}
 		}
 	}
 }
