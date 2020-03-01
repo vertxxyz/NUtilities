@@ -1,0 +1,50 @@
+.dragAndDropAsset {
+	flex-grow: 1;
+    margin-left: 40px;
+	margin-right: 40px;
+	max-height: 40px;
+}
+
+.centeredVertically {
+	flex-grow: 1;
+	align-items: stretch;
+	justify-content: center;
+}
+
+.windowRootCenterer {
+	flex-direction: row;
+	flex-grow: 1;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+}
+
+.spacer {
+	flex-grow: 1;
+}
+
+.listViewContainer {
+	margin: 30px 40px 30px 40px;
+	padding: 10px 10px 10px 10px;
+	background-color: rgba(255, 255, 255, 0.2);
+	border-radius: 6px;
+	flex-grow: 1;
+}
+
+.listViewLabel {
+	-unity-font-style: bold;
+	padding-left: 10px;
+	font-size: 16px;
+}
+
+.listView {
+	flex-grow: 1;
+	min-height: 30px;
+}
+
+.listViewButton {
+	height: 28px;
+	font-size: 14px;
+}

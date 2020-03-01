@@ -5,7 +5,8 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace Vertx.Editor {
+namespace Vertx.Editor
+{
 	[CustomPropertyDrawer(typeof(EnumFlagsAttribute))]
 	public class EnumFlagsDrawer : PropertyDrawer
 	{
@@ -39,7 +40,7 @@ namespace Vertx.Editor {
 			int mask = maskProperty.intValue;
 
 			if (!namesLookup.TryGetValue(enumType, out string[] names))
-				namesLookup.Add(enumType, names = Enum.GetNames(enumType).Skip(1).ToArray());
+				namesLookup.Add(enumType, names = Enum.GetNames(enumType).Skip(1).Select(ObjectNames.NicifyVariableName).ToArray());
 
 			if (!valuesLookup.TryGetValue(enumType, out int[] values))
 				valuesLookup.Add(enumType, values = new int[names.Length]);
@@ -112,6 +113,7 @@ namespace Vertx.Editor {
 				for (int i = 0; i < values.Length; i++)
 				{
 					int localI = i;
+					//int localIndex = (int)(Mathf.Log(localI) / Mathf.Log(2)) + 1;
 					menu.AddItem(new GUIContent(names[i]), MaskContainsIndex(i), () =>
 					{
 						//If the mask is "everything" then we want to make sure that this flip removes everything up to the max index.
@@ -119,14 +121,17 @@ namespace Vertx.Editor {
 						{
 							mask = 0;
 							//Just toggle *on* the values that are really in the mask range.
-							for (int j = 0; j < values.Length; j++)
-								mask |= 1 << localI;
+							foreach (int value in values)
+							{
+								//int index = (int)(Mathf.Log(value) / Mathf.Log(2)) + 1;
+								mask |= value;
+							}
 						}
 						//If we're one away from having "everything"
 						else if (count == values.Length - 1)
 						{
 							//And the mask is going to flip the bit in question
-							if (((1 << localI) & mask) == 0)
+							if ((values[localI] & mask) == 0)
 							{
 								//Set the mask to "everything"
 								maskProperty.intValue = ~0;

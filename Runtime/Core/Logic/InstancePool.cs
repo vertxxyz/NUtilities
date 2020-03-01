@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using Object = UnityEngine.Object;
 
 namespace Vertx
@@ -36,6 +37,8 @@ namespace Vertx
 		/// <returns>An instance retrieved from the pool.</returns>
 		public static TInstanceType Get(TInstanceType prefab, Transform parent, Vector3 position, Quaternion rotation, Space space = Space.World)
 		{
+			Assert.IsNotNull(prefab, $"Prefab passed to InstancePool<{typeof(TInstanceType).Name}>{nameof(Get)} was null");
+			
 			// Use the pool if we have one already
 			if (pool.TryGetValue(prefab, out var stack))
 			{
