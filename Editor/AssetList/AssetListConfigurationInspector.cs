@@ -32,13 +32,22 @@ namespace Vertx.Editor
 		private ReorderableList reorderableList;
 
 		private readonly GUIContent
+			titleLabel = new GUIContent("Title"),
 			iconLabel = new GUIContent("Icon"),
+			propertyLabel = new GUIContent("Property"),
 			findIconLabel = new GUIContent("Find Icon Property"),
 			columnsLabel = new GUIContent("Columns"),
 			addLabel = new GUIContent("Add Column"),
 			cancelLabel = new GUIContent("Cancel"),
 			referenceObjectLabel = new GUIContent("Reference Object", "This object is used to gather Serialized Properties for column creation."),
 			searchlabel = new GUIContent("Serialized Property Search");
+		
+		private GUIStyle centeredMiniLabel;
+
+		private GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.miniLabel)
+		{
+			alignment = TextAnchor.MiddleCenter
+		});
 
 		[SerializeField]
 		private AdvancedDropdownState propertyDropdownState;
@@ -58,6 +67,36 @@ namespace Vertx.Editor
 		private RectOffset backgroundOffset;
 
 		private readonly Dictionary<int, float> heightOverrideLookup = new Dictionary<int, float>();
+
+		readonly HashSet<string> typeStrings = GetIconTypeStrings();
+
+		private static HashSet<string> GetIconTypeStrings()
+		{
+			Type texType = typeof(Texture);
+			Type spriteType = typeof(Sprite);
+			HashSet<string> typeStrings = new HashSet<string>
+			{
+				$"PPtr<${nameof(Texture)}>",
+				$"PPtr<${nameof(Sprite)}>",
+				$"PPtr<{nameof(Texture)}>",
+				$"PPtr<{nameof(Sprite)}>"
+			};
+			foreach (string type in TypeCache.GetTypesDerivedFrom(texType)
+				.Select(type1 => type1.Name.Replace("UnityEngine.", string.Empty)))
+			{
+				typeStrings.Add($"PPtr<${type}>");
+				typeStrings.Add($"PPtr<{type}>");
+			}
+
+			foreach (string type in TypeCache.GetTypesDerivedFrom(spriteType)
+				.Select(type1 => type1.Name.Replace("UnityEngine.", string.Empty)))
+			{
+				typeStrings.Add($"PPtr<${type}>");
+				typeStrings.Add($"PPtr<{type}>");
+			}
+
+			return typeStrings;
+		}
 
 		protected override void OnEnable()
 		{
@@ -98,95 +137,37 @@ namespace Vertx.Editor
 
 					string propertyName = null;
 					bool captureHeight = false;
-					bool repeat;
-					do
+					
+					if (propertyType == SerializedPropertyType.Generic)
 					{
-						repeat = false;
-						switch (propertyType)
+						/*
+							bool IsArray;
+							ArrayIndexing ArrayIndexing;
+							string ArrayPropertyKey;
+							string ArrayQuery;
+							int ArrayIndex;
+							string ArrayPropertyPath;
+							*/
+						captureHeight = true;
+						bool isArray = column.FindPropertyRelative("IsArray").boolValue;
+						if (isArray)
 						{
-							case SerializedPropertyType.Generic:
-								/*
-								bool IsArray;
-								ArrayIndexing ArrayIndexing;
-								string ArrayPropertyKey;
-								string ArrayQuery;
-								int ArrayIndex;
-								string ArrayPropertyPath;
-								*/
-								captureHeight = true;
-								bool isArray = column.FindPropertyRelative("IsArray").boolValue;
-								if (isArray)
-								{
-									var arrayPropertyInformation = column.FindPropertyRelative("ArrayPropertyInformation");
+							var arrayPropertyInformation = column.FindPropertyRelative("ArrayPropertyInformation");
 
-									ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject);
+							ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject, null);
 
-									var arrayPropertyPath = arrayPropertyInformation.FindPropertyRelative("ArrayPropertyPath");
-									if (!string.IsNullOrEmpty(arrayPropertyPath.stringValue))
-									{
-										propertyType = (SerializedPropertyType) arrayPropertyInformation.FindPropertyRelative("ArrayPropertyType").intValue;
-										repeat = true;
-									}
-								}
-
-								break;
-							case SerializedPropertyType.Integer:
-							case SerializedPropertyType.Float:
-								propertyName = "NumericalDisplay";
-								break;
-							case SerializedPropertyType.Boolean:
-								break;
-							case SerializedPropertyType.String:
-								propertyName = "StringDisplay";
-								break;
-							case SerializedPropertyType.Color:
-								propertyName = "ColorDisplay";
-								break;
-							case SerializedPropertyType.ObjectReference:
-								propertyName = "ObjectDisplay";
-								break;
-							case SerializedPropertyType.LayerMask:
-							case SerializedPropertyType.Enum:
-								propertyName = "EnumDisplay";
-								break;
-							case SerializedPropertyType.Vector2:
-								break;
-							case SerializedPropertyType.Vector3:
-								break;
-							case SerializedPropertyType.Vector4:
-								break;
-							case SerializedPropertyType.Rect:
-								break;
-							case SerializedPropertyType.ArraySize:
-								break;
-							case SerializedPropertyType.Character:
-								break;
-							case SerializedPropertyType.AnimationCurve:
-								break;
-							case SerializedPropertyType.Bounds:
-								break;
-							case SerializedPropertyType.Gradient:
-								break;
-							case SerializedPropertyType.Quaternion:
-								break;
-							case SerializedPropertyType.ExposedReference:
-								break;
-							case SerializedPropertyType.FixedBufferSize:
-								break;
-							case SerializedPropertyType.Vector2Int:
-								break;
-							case SerializedPropertyType.Vector3Int:
-								break;
-							case SerializedPropertyType.RectInt:
-								break;
-							case SerializedPropertyType.BoundsInt:
-								break;
-							case SerializedPropertyType.ManagedReference:
-								break;
-							default:
-								throw new ArgumentOutOfRangeException();
+							var arrayPropertyPath = arrayPropertyInformation.FindPropertyRelative("ArrayPropertyPath");
+							if (!string.IsNullOrEmpty(arrayPropertyPath.stringValue))
+							{
+								propertyType = (SerializedPropertyType) arrayPropertyInformation.FindPropertyRelative("ArrayPropertyType").intValue;
+								propertyName = GetPropertyDisplayString(propertyType);
+							}
 						}
-					} while (repeat);
+					}
+					else
+					{
+						propertyName = GetPropertyDisplayString(propertyType);
+					}
 
 					if (propertyName != null)
 					{
@@ -261,29 +242,42 @@ namespace Vertx.Editor
 			using (new EditorGUIExtensions.ContainerScope(columnsLabel, -2))
 			using (new EditorGUIExtensions.OutlineScope(false, false))
 			{
-				GUILayout.Label(iconLabel, EditorStyles.miniLabel);
+				//Icon Header
+				GUILayout.Label(iconLabel, CenteredMiniLabel);
 
 				if (typeIsTextureOrSprite)
 					EditorGUILayout.HelpBox("Type inherits from Texture or Sprite. Icon is automated.", MessageType.Info);
 				else
 				{
+					//Icon property path
 					if (!string.IsNullOrEmpty(iconPropertyPath.stringValue))
 						EditorGUILayout.PropertyField(iconPropertyPath, GUIContent.none);
 					if (ValidateReferenceObjectWithHelpWarning(referenceObject))
 					{
+						//Icon property button.
 						Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+						rect.height = EditorGUIUtility.singleLineHeight; //this is required to fix issues with the Layout stage
 						rect.xMin += EditorGUI.indentLevel * 15;
 						if (GUI.Button(rect, findIconLabel))
 						{
 							CreateIconPropertyDropdown();
 							iconPropertyDropdown?.Show(rect);
 						}
+						
+						bool isArray = iconIsArray.boolValue;
+						if (isArray)
+						{
+							float yBefore = rect.yMax;
+							ArrayDataDrawer.OnGUI(ref rect, iconPropertyPath, iconArrayPropertyInformation, referenceObject, typeStrings);
+							GUILayoutUtility.GetRect(0, rect.yMax - yBefore);
+						}
 					}
 				}
 
+				GUILayout.Label(propertyLabel, CenteredMiniLabel);
 				using (new EditorGUI.DisabledScope(true))
 				{
-					EditorGUILayout.TextField("Title", "Name");
+					EditorGUILayout.TextField(titleLabel, "Name");
 					EditorGUILayout.TextField("Property Path", "m_Name");
 				}
 
@@ -387,30 +381,16 @@ namespace Vertx.Editor
 			
 			//Property paths that are also arrays
 			HashSet<string> iconArrayPropertyPaths = new HashSet<string>();
-			
-			Type texType = typeof(Texture);
-			Type spriteType = typeof(Sprite);
-			HashSet<string> typeStrings = new HashSet<string>
-			{
-				$"PPtr<${nameof(Texture)}>",
-				$"PPtr<${nameof(Sprite)}>"
-			};
-			foreach (string type in TypeCache.GetTypesDerivedFrom(texType)
-				.Select(type1 => $"PPtr<${type1.Name.Replace("UnityEngine.", string.Empty)}>"))
-				typeStrings.Add(type);
-
-			foreach (string type in TypeCache.GetTypesDerivedFrom(spriteType)
-				.Select(type1 => $"PPtr<${type1.Name.Replace("UnityEngine.", string.Empty)}>"))
-				typeStrings.Add(type);
 
 			SerializedProperty skipUntil = null;
 			foreach (SerializedProperty prop in iterator)
 			{
 				//Skip until the end of the array property
-				if (skipUntil != null && !SerializedProperty.EqualContents(prop, skipUntil))
+				if (skipUntil != null)
 				{
+					if(!SerializedProperty.EqualContents(prop, skipUntil))
+						continue;
 					skipUntil = null;
-					continue;
 				}
 
 				if (prop.propertyType == SerializedPropertyType.Generic && prop.isArray)
@@ -419,7 +399,7 @@ namespace Vertx.Editor
 					bool hasTextureProperty = false;
 					SerializedProperty temp = prop.Copy();
 					SerializedProperty end = prop.GetEndProperty();
-					while (temp.Next(true) && !SerializedProperty.EqualContents(temp, end))
+					while (temp.NextVisible(true) && !SerializedProperty.EqualContents(temp, end))
 					{
 						if (temp.propertyType != SerializedPropertyType.ObjectReference)
 							continue;

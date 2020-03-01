@@ -70,22 +70,44 @@ namespace Vertx.Editor
 		private Action<Rect, SerializedProperty> onGUI;
 		private readonly Func<SerializedObject, SerializedProperty> getPropertyOverride;
 
-		public ColumnContext(string propertyPath, string iconPropertyName, NamePropertyDisplay nameDisplay, AssetListWindow window)
+		public ColumnContext(AssetListConfiguration c, NamePropertyDisplay nameDisplay, AssetListWindow window)
 		{
-			this.propertyPath = propertyPath;
+			propertyPath = "m_Name";
+			Func<SerializedObject, SerializedProperty> getIconProperty = null;
+			if (!string.IsNullOrEmpty(c.IconPropertyPath))
+			{
+				if (c.IconIsArray)
+				{
+					AssetListConfiguration.ArrayData propInfo = c.IconArrayPropertyInformation;
+					Func<SerializedProperty, SerializedProperty> arrayLookup = GetArrayPropertyLookup(propInfo);
+					if (arrayLookup != null)
+					{
+						getIconProperty = context =>
+						{
+							SerializedProperty iconPath = context.FindProperty(c.IconPropertyPath);
+							return arrayLookup?.Invoke(iconPath);
+						};
+					}
+				}
+				else
+				{
+					getIconProperty = context => context.FindProperty(c.IconPropertyPath);
+				}
+			}
+
 			switch (nameDisplay)
 			{
 				case NamePropertyDisplay.Label:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, GUI.Label);
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, GUI.Label);
 					break;
 				case NamePropertyDisplay.NicifiedLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyNicifiedLabelProperty);
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyNicifiedLabelProperty);
 					break;
 				case NamePropertyDisplay.CenteredLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyCenteredLabelProperty);
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyCenteredLabelProperty);
 					break;
 				case NamePropertyDisplay.NicifiedCenteredLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, iconPropertyName, window, ReadonlyNicifiedCenteredLabelProperty);
+					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyNicifiedCenteredLabelProperty);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(nameDisplay), nameDisplay, null);
@@ -250,8 +272,21 @@ namespace Vertx.Editor
 
 			// Configuration for an array property -------------------------------
 
+			AssetListConfiguration.ArrayData propInfo = c.ArrayPropertyInformation;
+			Func<SerializedProperty, SerializedProperty> getProperty = GetArrayPropertyLookup(propInfo);
+
+			getPropertyOverride = context =>
+			{
+				SerializedProperty property = context.FindProperty(propertyPath);
+				return getProperty.Invoke(property);
+			};
+
+			ConfigureGUI(propInfo.ArrayPropertyType);
+		}
+
+		private static Func<SerializedProperty, SerializedProperty> GetArrayPropertyLookup(AssetListConfiguration.ArrayData propInfo)
+		{
 			Func<SerializedProperty, SerializedProperty> getProperty;
-			var propInfo = c.ArrayPropertyInformation;
 			switch (propInfo.ArrayIndexing)
 			{
 				case ArrayIndexing.First:
@@ -286,13 +321,7 @@ namespace Vertx.Editor
 					throw new ArgumentOutOfRangeException();
 			}
 
-			getPropertyOverride = context =>
-			{
-				SerializedProperty property = context.FindProperty(propertyPath);
-				return getProperty.Invoke(property);
-			};
-
-			ConfigureGUI(propInfo.ArrayPropertyType);
+			return getProperty;
 		}
 
 		public void OnGUI(Rect cellRect, SerializedProperty @object) => onGUI?.Invoke(cellRect, @object);
@@ -327,7 +356,7 @@ namespace Vertx.Editor
 		private static void LargeObjectLabelWithPing(
 			Rect r,
 			SerializedProperty p,
-			string iconPropertyName,
+			Func<SerializedObject, SerializedProperty> getIconProperty,
 			AssetListWindow window,
 			Action<Rect, string> labelGUI)
 		{
@@ -338,11 +367,11 @@ namespace Vertx.Editor
 					texture = sprite.texture;
 				else
 				{
-					if (string.IsNullOrEmpty(iconPropertyName))
+					if (getIconProperty == null)
 						texture = null;
 					else
 					{
-						SerializedProperty iconProperty = p.serializedObject.FindProperty(iconPropertyName);
+						SerializedProperty iconProperty = getIconProperty(p.serializedObject);
 						if (iconProperty == null)
 							texture = null;
 						else

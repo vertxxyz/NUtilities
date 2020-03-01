@@ -147,20 +147,20 @@ namespace Vertx.Editor
 			foreach (string guid in guids)
 			{
 				string path = AssetDatabase.GUIDToAssetPath(guid);
-				if(loadedPaths.Contains(path))
+				if (loadedPaths.Contains(path))
 					continue;
 				loadedPaths.Add(path);
 				var asset = AssetDatabase.LoadAllAssetsAtPath(path);
 				foreach (Object o in asset)
 				{
-					if(type.IsInstanceOfType(o))
+					if (type.IsInstanceOfType(o))
 						values.Add(o);
 				}
 			}
 
 			return values;
 		}
-		
+
 		public static string GetValueForRegex(SerializedProperty property)
 		{
 			switch (property.propertyType)
@@ -285,7 +285,7 @@ namespace Vertx.Editor
 		public static float GetMinWidth(AssetListConfiguration.ColumnConfiguration column)
 		{
 			SerializedPropertyType propertyType = column.IsArray ? column.ArrayPropertyInformation.ArrayPropertyType : column.PropertyType;
-			
+
 			float minWidth;
 			switch (propertyType)
 			{
@@ -354,6 +354,72 @@ namespace Vertx.Editor
 			}
 
 			return minWidth;
+		}
+
+		public static string GetPropertyDisplayString(SerializedPropertyType propertyType)
+		{
+			string propertyName = null;
+			switch (propertyType)
+			{
+				case SerializedPropertyType.Generic:
+					throw new ArgumentException($"{SerializedPropertyType.Generic} cannot be handled by {nameof(GetPropertyDisplayString)}");
+				case SerializedPropertyType.Integer:
+				case SerializedPropertyType.Float:
+					propertyName = "NumericalDisplay";
+					break;
+				case SerializedPropertyType.Boolean:
+					break;
+				case SerializedPropertyType.String:
+					propertyName = "StringDisplay";
+					break;
+				case SerializedPropertyType.Color:
+					propertyName = "ColorDisplay";
+					break;
+				case SerializedPropertyType.ObjectReference:
+					propertyName = "ObjectDisplay";
+					break;
+				case SerializedPropertyType.LayerMask:
+				case SerializedPropertyType.Enum:
+					propertyName = "EnumDisplay";
+					break;
+				case SerializedPropertyType.Vector2:
+					break;
+				case SerializedPropertyType.Vector3:
+					break;
+				case SerializedPropertyType.Vector4:
+					break;
+				case SerializedPropertyType.Rect:
+					break;
+				case SerializedPropertyType.ArraySize:
+					break;
+				case SerializedPropertyType.Character:
+					break;
+				case SerializedPropertyType.AnimationCurve:
+					break;
+				case SerializedPropertyType.Bounds:
+					break;
+				case SerializedPropertyType.Gradient:
+					break;
+				case SerializedPropertyType.Quaternion:
+					break;
+				case SerializedPropertyType.ExposedReference:
+					break;
+				case SerializedPropertyType.FixedBufferSize:
+					break;
+				case SerializedPropertyType.Vector2Int:
+					break;
+				case SerializedPropertyType.Vector3Int:
+					break;
+				case SerializedPropertyType.RectInt:
+					break;
+				case SerializedPropertyType.BoundsInt:
+					break;
+				case SerializedPropertyType.ManagedReference:
+					break;
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+			return propertyName;
 		}
 
 		public static void DrawTextureInRect(Rect r, Texture texture)

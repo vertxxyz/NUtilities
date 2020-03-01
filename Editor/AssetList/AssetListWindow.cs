@@ -150,7 +150,7 @@ namespace Vertx.Editor
 
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
-				new ColumnContext("m_Name", configuration.IconPropertyPath, configuration.NameDisplay, this)
+				new ColumnContext(configuration, configuration.NameDisplay, this)
 			};
 
 			if (configuration.Columns != null)

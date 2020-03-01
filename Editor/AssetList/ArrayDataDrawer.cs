@@ -18,7 +18,7 @@ namespace Vertx.Editor
 			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", "Find a Serialized Property to draw if the key's query has passed."),
 			queryLabel = new GUIContent("Query", "A Regex query on the value as a string");
 		
-		public static void OnGUI(ref Rect rect, SerializedProperty propertyPath, SerializedProperty arrayProperty, Object referenceObject)
+		public static void OnGUI(ref Rect rect, SerializedProperty propertyPath, SerializedProperty arrayProperty, Object referenceObject, HashSet<string> typeStrings)
 		{
 			SerializedProperty indexing = arrayProperty.FindPropertyRelative("ArrayIndexing");
 			rect.NextGUIRect();
@@ -79,7 +79,7 @@ namespace Vertx.Editor
 					EditorGUI.PropertyField(r, arrayPropertyPath);
 				r.NextGUIRect();
 				if (GUI.Button(r, addDrawingPropertyLabel))
-					DisplayArrayDrawingPropertyDropdown(r, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject);
+					DisplayArrayDrawingPropertyDropdown(r, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject, typeStrings);
 			}
 		}
 		
@@ -108,7 +108,7 @@ namespace Vertx.Editor
 			dropdown.Show(rect);
 		}
 		
-		private static void DisplayArrayDrawingPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column, Object referenceObject)
+		private static void DisplayArrayDrawingPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column, Object referenceObject, HashSet<string> typeStrings)
 		{
 			HashSet<string> propertyPaths = new HashSet<string>();
 			Dictionary<string, SerializedPropertyType> typeLookup = new Dictionary<string, SerializedPropertyType>();
@@ -123,6 +123,8 @@ namespace Vertx.Editor
 			foreach (SerializedProperty property in iterator)
 			{
 				if(property.propertyType == SerializedPropertyType.Generic) continue;
+				if(!typeStrings?.Contains(property.type) ?? false) continue;
+				
 				string localPath = property.propertyPath.Substring(propertyPath.Length + 1);
 				propertyPaths.Add(localPath);// + 1 to skip the '.'
 				typeLookup.Add(localPath, property.propertyType);
