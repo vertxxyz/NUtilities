@@ -265,7 +265,17 @@ namespace Vertx.Editor
 					case SerializedPropertyType.BoundsInt:
 					case SerializedPropertyType.ManagedReference:
 					default:
-						onGUI = Property;
+						switch (c.DefaultDisplay)
+						{
+							case GUIType.Property:
+								onGUI = Property;
+								break;
+							case GUIType.ReadonlyProperty:
+								onGUI = ReadonlyProperty;
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
 						break;
 				}
 			}

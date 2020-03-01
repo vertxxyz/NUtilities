@@ -17,15 +17,15 @@ namespace Vertx.Editor
 			addArrayKeyLabel = new GUIContent("Add Key", "Find a Serialized Property to use as a key into the above array property."),
 			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", "Find a Serialized Property to draw if the key's query has passed."),
 			queryLabel = new GUIContent("Query", "A Regex query on the value as a string");
-		
+
 		public static void OnGUI(ref Rect rect, SerializedProperty propertyPath, SerializedProperty arrayProperty, Object referenceObject, HashSet<string> typeStrings)
 		{
 			SerializedProperty indexing = arrayProperty.FindPropertyRelative("ArrayIndexing");
 			rect.NextGUIRect();
 			EditorGUI.PropertyField(rect, indexing);
-			
+
 			if (!AssetListConfigurationInspector.ValidateReferenceObjectWithHelpWarningRect(referenceObject, ref rect)) return;
-			
+
 			switch ((ArrayIndexing) indexing.intValue)
 			{
 				case ArrayIndexing.First:
@@ -82,7 +82,7 @@ namespace Vertx.Editor
 					DisplayArrayDrawingPropertyDropdown(r, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject, typeStrings);
 			}
 		}
-		
+
 		private static void DisplayArrayKeyPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column, Object referenceObject)
 		{
 			HashSet<string> propertyPaths = new HashSet<string>();
@@ -93,11 +93,11 @@ namespace Vertx.Editor
 				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
 				return;
 			}
-			
+
 			foreach (SerializedProperty property in iterator)
 			{
-				if(!IsValidPropertyKeyType(property.propertyType)) continue;
-				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1));// + 1 to skip the '.'
+				if (!IsValidPropertyKeyType(property.propertyType)) continue;
+				propertyPaths.Add(property.propertyPath.Substring(propertyPath.Length + 1)); // + 1 to skip the '.'
 			}
 
 			PropertyDropdown dropdown = new PropertyDropdown(new AdvancedDropdownState(), s =>
@@ -107,7 +107,7 @@ namespace Vertx.Editor
 			}, propertyPaths, null);
 			dropdown.Show(rect);
 		}
-		
+
 		private static void DisplayArrayDrawingPropertyDropdown(Rect rect, string propertyPath, SerializedProperty column, Object referenceObject, HashSet<string> typeStrings)
 		{
 			HashSet<string> propertyPaths = new HashSet<string>();
@@ -119,14 +119,14 @@ namespace Vertx.Editor
 				Debug.LogError($"The current reference object {referenceObject} does not contain an array of this type with values in it. Try another reference object.");
 				return;
 			}
-			
+
 			foreach (SerializedProperty property in iterator)
 			{
-				if(property.propertyType == SerializedPropertyType.Generic) continue;
-				if(!typeStrings?.Contains(property.type) ?? false) continue;
-				
+				if (property.propertyType == SerializedPropertyType.Generic) continue;
+				if (!typeStrings?.Contains(property.type) ?? false) continue;
+
 				string localPath = property.propertyPath.Substring(propertyPath.Length + 1);
-				propertyPaths.Add(localPath);// + 1 to skip the '.'
+				propertyPaths.Add(localPath); // + 1 to skip the '.'
 				typeLookup.Add(localPath, property.propertyType);
 			}
 
@@ -138,7 +138,7 @@ namespace Vertx.Editor
 			}, propertyPaths, null);
 			dropdown.Show(rect);
 		}
-		
+
 		private class ScriptableObjectPropertyIterator : IEnumerable<SerializedProperty>
 		{
 			private readonly SerializedObject serializedObject;

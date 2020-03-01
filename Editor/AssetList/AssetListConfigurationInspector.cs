@@ -41,7 +41,7 @@ namespace Vertx.Editor
 			cancelLabel = new GUIContent("Cancel"),
 			referenceObjectLabel = new GUIContent("Reference Object", "This object is used to gather Serialized Properties for column creation."),
 			searchlabel = new GUIContent("Serialized Property Search");
-		
+
 		private GUIStyle centeredMiniLabel;
 
 		private GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.miniLabel)
@@ -137,7 +137,7 @@ namespace Vertx.Editor
 
 					string propertyName = null;
 					bool captureHeight = false;
-					
+
 					if (propertyType == SerializedPropertyType.Generic)
 					{
 						/*
@@ -263,7 +263,7 @@ namespace Vertx.Editor
 							CreateIconPropertyDropdown();
 							iconPropertyDropdown?.Show(rect);
 						}
-						
+
 						bool isArray = iconIsArray.boolValue;
 						if (isArray)
 						{
@@ -378,7 +378,7 @@ namespace Vertx.Editor
 
 			HashSet<string> iconPropertyPaths = new HashSet<string>();
 			var iterator = new ScriptableObjectIterator(referenceObject);
-			
+
 			//Property paths that are also arrays
 			HashSet<string> iconArrayPropertyPaths = new HashSet<string>();
 
@@ -388,7 +388,7 @@ namespace Vertx.Editor
 				//Skip until the end of the array property
 				if (skipUntil != null)
 				{
-					if(!SerializedProperty.EqualContents(prop, skipUntil))
+					if (!SerializedProperty.EqualContents(prop, skipUntil))
 						continue;
 					skipUntil = null;
 				}
@@ -454,6 +454,7 @@ namespace Vertx.Editor
 					iconIsArray.boolValue = true;
 					iconArrayPropertyInformation.FindPropertyRelative("ArrayPropertyType").intValue = (int) SerializedPropertyType.ObjectReference;
 				}
+
 				serializedObject.ApplyModifiedProperties();
 			}
 		}
