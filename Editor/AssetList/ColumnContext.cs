@@ -263,7 +263,9 @@ namespace Vertx.Editor
 					case SerializedPropertyType.Vector3Int:
 					case SerializedPropertyType.RectInt:
 					case SerializedPropertyType.BoundsInt:
+					#if UNITY_2019_3_OR_NEWER
 					case SerializedPropertyType.ManagedReference:
+					#endif
 					default:
 						switch (c.DefaultDisplay)
 						{

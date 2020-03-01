@@ -213,7 +213,9 @@ namespace Vertx.Editor
 				case SerializedPropertyType.ExposedReference:
 					return property.exposedReferenceValue.name;
 				case SerializedPropertyType.AnimationCurve:
+				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
+				#endif
 				case SerializedPropertyType.Gradient:
 				case SerializedPropertyType.Generic:
 				default:
@@ -274,7 +276,9 @@ namespace Vertx.Editor
 					return property.boundsIntValue.size.sqrMagnitude;
 				case SerializedPropertyType.ExposedReference:
 					return property.exposedReferenceValue.name;
+				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
+				#endif
 				case SerializedPropertyType.Gradient:
 				case SerializedPropertyType.Generic:
 				default:
@@ -347,7 +351,9 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Vector3Int:
 				case SerializedPropertyType.RectInt:
 				case SerializedPropertyType.BoundsInt:
+				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
+				#endif
 				default:
 					minWidth = 200;
 					break;
@@ -398,7 +404,9 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Vector3Int:
 				case SerializedPropertyType.RectInt:
 				case SerializedPropertyType.BoundsInt:
+				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
+				#endif
 				default:
 					propertyName = "DefaultDisplay";
 					break;
