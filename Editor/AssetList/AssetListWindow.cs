@@ -60,8 +60,9 @@ namespace Vertx.Editor
 		{
 			rootVisualElement.Clear();
 
-			VisualTreeAsset uxml = StyleExtensions.GetUXML("BlankAssetList");
-			uxml.CloneTree(rootVisualElement);
+			var data = StyleExtensions.GetStyleSheetAndUXML("BlankAssetList");
+			data.Item2.CloneTree(rootVisualElement);
+			rootVisualElement.styleSheets.Add(data.Item1);
 			rootVisualElement.Q<DragAndDropBox>("DropTarget").RegisterSingle(CreateNewWindow);
 			var container = rootVisualElement.Q<VisualElement>("ListViewContainer");
 			AssetListConfiguration[] configurations = EditorUtils.LoadAssetsOfType<AssetListConfiguration>();

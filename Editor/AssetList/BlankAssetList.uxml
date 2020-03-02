@@ -1,6 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <ui:VisualElement name="Root" class="windowRootCenterer">
-        <Style src="BlankAssetList.uss" />
         <ui:VisualElement name="VerticalCenterer" class="centeredVertically">
             <ui:VisualElement class="spacer" />
             <Vertx.Controls.DragAndDropBox name="DropTarget" text="Drag and Drop Asset or Component to Create Window" class="dragAndDropAsset" />
