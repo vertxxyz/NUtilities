@@ -61,6 +61,7 @@ namespace Vertx.Testing.Editor
 				if(!IsValidPath(path)) continue;
 				EditorUtility.DisplayProgressBar("Checking ScriptableObject Assets for missing references.", path, i / progressTotal);
 				ScriptableObject scriptableObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+				if(scriptableObject == null) continue; //This can occur if an asset has been created but the type is not compiled for the version.
 				CheckForMissingReferencesOnObject(scriptableObject);
 			}
 
