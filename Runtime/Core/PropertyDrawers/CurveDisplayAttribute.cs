@@ -19,6 +19,7 @@ namespace Vertx
 
 		public CurveDisplayAttribute(int minX, int minY, int maxX, int maxY)
 		{
+			Color = new Color(0.4f, 1, 0);
 			Rect = new Rect(minX, minY, maxX, maxY);
 			Display = CurveDisplay.RectAndColor;
 		}
