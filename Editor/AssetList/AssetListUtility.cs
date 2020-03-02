@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -170,7 +173,7 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Boolean:
 					return property.boolValue.ToString();
 				case SerializedPropertyType.Float:
-					return property.floatValue.ToString();
+					return property.floatValue.ToString(CultureInfo.InvariantCulture);
 				case SerializedPropertyType.String:
 					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
 						return property.serializedObject.targetObject.name;
@@ -212,14 +215,38 @@ namespace Vertx.Editor
 					return property.boundsIntValue.ToString();
 				case SerializedPropertyType.ExposedReference:
 					return property.exposedReferenceValue.name;
+				case SerializedPropertyType.Gradient:
+					Gradient gradient = GetGradientValue(property);
+					if (gradient == null) return string.Empty;
+					StringBuilder sB = new StringBuilder(20);
+					string asciiGradient = " .:-=+*#%@";
+					int gradientMultiplier = asciiGradient.Length - 1;
+					for (int i = 0; i < 20; i++)
+					{
+						float grayscale = 1 - gradient.Evaluate(i / 19f).grayscale;
+						sB.Append(asciiGradient[Mathf.Clamp(Mathf.RoundToInt(grayscale * gradientMultiplier), 0, gradientMultiplier)]);
+					}
+					return sB.ToString();
 				case SerializedPropertyType.AnimationCurve:
 				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
 				#endif
-				case SerializedPropertyType.Gradient:
 				case SerializedPropertyType.Generic:
 				default:
 					throw new ArgumentOutOfRangeException($"{property.propertyType} is not supported by {nameof(GetValueForRegex)}");
+			}
+
+			Gradient GetGradientValue(SerializedProperty sp)
+			{
+				PropertyInfo propertyInfo = typeof(SerializedProperty).GetProperty(
+					"gradientValue",
+					BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+					null,
+					typeof(Gradient),
+					Array.Empty<Type>(),
+					null
+				);
+				return propertyInfo?.GetValue(sp, null) as Gradient;
 			}
 		}
 

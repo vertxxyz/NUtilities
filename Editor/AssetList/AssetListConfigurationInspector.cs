@@ -293,7 +293,11 @@ namespace Vertx.Editor
 				{
 					Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
 					if (GUI.Button(rect, addLabel))
+					{
+						if(propertyDropdown == null)
+							CreatePropertyDropdown();
 						propertyDropdown.Show(rect);
+					}
 				}
 			}
 

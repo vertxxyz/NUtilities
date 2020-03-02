@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
@@ -130,8 +131,46 @@ namespace Vertx.Editor
 				toolbarSearchField.SetValueWithoutNotify(treeView.searchString);
 			toolbarSearchField.RegisterValueChangedCallback(evt => treeView.searchString = evt.newValue);
 
+			var toolbarMenu = rootVisualElement.Q<ToolbarMenu>("ExportMenu");
+			toolbarMenu.menu.AppendAction("TSV", action => ExportToTSV());
+
 			assetListContainer = rootVisualElement.Q<IMGUIContainer>("AssetList");
 			assetListContainer.onGUIHandler = MultiColumnListGUI;
+		}
+
+		private void ExportToTSV()
+		{
+			StringBuilder sB = new StringBuilder();
+
+			void Append(object value)
+			{
+				sB.Append(value);
+				sB.Append('\t');
+			}
+
+			//Append all the headers
+			foreach (var column in GetColumnsFromConfiguration(configuration))
+				Append(column.headerContent.text);
+			sB.Append('\n');
+
+
+			var orderedItems = objects.OrderBy(i => i.name);
+			foreach (var t in orderedItems)
+			{
+				using (SerializedObject sO = new SerializedObject(t))
+				{
+					foreach (ColumnContext context in columnContexts)
+					{
+						SerializedProperty property = context.GetValue(sO);
+						if(property != null)
+							sB.Append(AssetListUtility.GetValueForRegex(property));
+						sB.Append('\t');
+					}
+				}
+				sB.Append('\n');
+			}
+
+			CodeUtility.SaveAndWriteFileDialog(configuration.name, sB.ToString(), "tsv");
 		}
 
 		private MultiColumnHeaderState.Column[] GetColumnsFromConfiguration(AssetListConfiguration configuration)

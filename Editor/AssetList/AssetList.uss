@@ -4,5 +4,7 @@
 
 .toolbarRightAlign {
 	flex-grow: 1;
-	align-items: flex-end;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-end;
 }
