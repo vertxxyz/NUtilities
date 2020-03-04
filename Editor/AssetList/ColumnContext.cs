@@ -278,6 +278,7 @@ namespace Vertx.Editor
 							default:
 								throw new ArgumentOutOfRangeException();
 						}
+
 						break;
 				}
 			}
@@ -299,15 +300,21 @@ namespace Vertx.Editor
 		private static Func<SerializedProperty, SerializedProperty> GetArrayPropertyLookup(AssetListConfiguration.ArrayData propInfo)
 		{
 			Func<SerializedProperty, SerializedProperty> getProperty;
+			string arrayPropertyPath = propInfo.ArrayPropertyPath;
 			switch (propInfo.ArrayIndexing)
 			{
 				case ArrayIndexing.First:
-					getProperty = arrayProperty => arrayProperty.arraySize == 0 ? null : arrayProperty.GetArrayElementAtIndex(0);
+					getProperty = arrayProperty =>
+					{
+						if (arrayProperty.arraySize == 0)
+							return null;
+						SerializedProperty element = arrayProperty.GetArrayElementAtIndex(0);
+						return element?.FindPropertyRelative(arrayPropertyPath);
+					};
 					break;
 				case ArrayIndexing.ByKey:
 					Regex regex = new Regex(propInfo.ArrayQuery);
 					string arrayPropertyKey = propInfo.ArrayPropertyKey;
-					string arrayPropertyPath = propInfo.ArrayPropertyPath;
 					getProperty = arrayProperty =>
 					{
 						if (arrayProperty == null) return null;
@@ -327,7 +334,13 @@ namespace Vertx.Editor
 					break;
 				case ArrayIndexing.ByIndex:
 					int index = propInfo.ArrayIndex;
-					getProperty = arrayProperty => arrayProperty.arraySize <= index ? null : arrayProperty.GetArrayElementAtIndex(index);
+					getProperty = arrayProperty =>
+					{
+						if (arrayProperty.arraySize <= index)
+							return null;
+						SerializedProperty element = arrayProperty.GetArrayElementAtIndex(index);
+						return element?.FindPropertyRelative(arrayPropertyPath);
+					};
 					break;
 				default:
 					throw new ArgumentOutOfRangeException();
