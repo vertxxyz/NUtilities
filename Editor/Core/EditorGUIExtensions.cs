@@ -161,11 +161,19 @@ namespace Vertx.Extensions
 			ref bool active,
 			bool hideToggle = false,
 			float widthCutoff = 0,
-			bool noBoldOrIndent = false
+			bool noBoldOrIndent = false,
+			float headerXOffset = 0
 		)
 		{
 			Rect r = GUILayoutUtility.GetRect(1, 17);
-			return DrawHeader(r, label, ref active, hideToggle, widthCutoff, noBoldOrIndent);
+			return DrawHeader(r,
+				label,
+				ref active,
+				hideToggle,
+				widthCutoff,
+				noBoldOrIndent,
+				headerXOffset: headerXOffset
+			);
 		}
 
 		public static bool DrawHeader(Rect contentRect,
@@ -217,12 +225,15 @@ namespace Vertx.Extensions
 			GUIContent label,
 			bool expanded,
 			float widthCutoff = 0,
-			bool opensOnDragUpdated = false
+			bool opensOnDragUpdated = false,
+			float headerXOffset = 0
 		)
 		{
 			bool v = true;
-			bool ret = DrawHeader(label, ref v, true, widthCutoff);
-			if (Foldout(GUILayoutUtility.GetLastRect(), expanded, opensOnDragUpdated))
+			bool ret = DrawHeader(label, ref v, true, widthCutoff, headerXOffset: headerXOffset);
+			Rect foldoutRect = GUILayoutUtility.GetLastRect();
+			foldoutRect.xMin += headerXOffset;
+			if (Foldout(foldoutRect, expanded, opensOnDragUpdated))
 				return true;
 			return ret;
 		}

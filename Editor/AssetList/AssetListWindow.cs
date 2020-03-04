@@ -354,8 +354,17 @@ namespace Vertx.Editor
 				SerializedProperty property = columnContext.GetValue(serializedObject);
 				if (property == null)
 				{
-					EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
-					GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
+					switch (window.configuration.MissingPropertyDisplay)
+					{
+						case MissingPropertyDisplay.RedWithWarning:
+							EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
+							GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
+							break;
+						case MissingPropertyDisplay.Blank:
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
 					return;
 				}
 

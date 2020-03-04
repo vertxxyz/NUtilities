@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if VERTX_INCLUDE_TESTS_INTERNAL
+using System;
 using UnityEngine;
 using NUnit.Framework;
 using UnityEditor;
@@ -314,3 +315,4 @@ namespace Vertx.Testing.Editor
 		}
 	}
 }
+#endif

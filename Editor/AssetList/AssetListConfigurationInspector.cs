@@ -22,6 +22,7 @@ namespace Vertx.Editor
 
 		private SerializedProperty
 			assetType,
+			missingPropertyDisplay,
 			columns,
 			typeString,
 			nameDisplay,
@@ -32,6 +33,7 @@ namespace Vertx.Editor
 		private ReorderableList reorderableList;
 
 		private readonly GUIContent
+			preferencesLabel = new GUIContent("Preferences"),
 			titleLabel = new GUIContent("Title"),
 			iconLabel = new GUIContent("Icon"),
 			propertyLabel = new GUIContent("Property"),
@@ -95,6 +97,7 @@ namespace Vertx.Editor
 		{
 			base.OnEnable();
 			assetType = serializedObject.FindProperty("assetType");
+			missingPropertyDisplay = serializedObject.FindProperty("missingPropertyDisplay");
 			columns = serializedObject.FindProperty("columns");
 			typeString = serializedObject.FindProperty("typeString");
 			nameDisplay = serializedObject.FindProperty("nameDisplay");
@@ -229,6 +232,14 @@ namespace Vertx.Editor
 						CreatePropertyDropdown();
 				}
 			}
+
+			if (EditorGUIExtensions.DrawHeaderWithFoldout(preferencesLabel, missingPropertyDisplay.isExpanded, headerXOffset: -16f))
+				missingPropertyDisplay.isExpanded = !missingPropertyDisplay.isExpanded;
+			if (missingPropertyDisplay.isExpanded)
+			{
+				EditorGUILayout.PropertyField(missingPropertyDisplay);
+			}
+			EditorGUIExtensions.DrawSplitter();
 
 			GUILayout.Space(8);
 
