@@ -42,13 +42,6 @@ namespace Vertx.Editor
 			referenceObjectLabel = new GUIContent("Reference Object", "This object is used to gather Serialized Properties for column creation."),
 			searchlabel = new GUIContent("Serialized Property Search");
 
-		private GUIStyle centeredMiniLabel;
-
-		private GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.miniLabel)
-		{
-			alignment = TextAnchor.MiddleCenter
-		});
-
 		[SerializeField]
 		private AdvancedDropdownState propertyDropdownState;
 
@@ -154,7 +147,7 @@ namespace Vertx.Editor
 						{
 							var arrayPropertyInformation = column.FindPropertyRelative("ArrayPropertyInformation");
 
-							ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject, null);
+							ArrayDataDrawer.OnGUI(ref rect, propertyPath, arrayPropertyInformation, referenceObject, null, rect.x - 20, -16);
 
 							var arrayPropertyPath = arrayPropertyInformation.FindPropertyRelative("ArrayPropertyPath");
 							if (!string.IsNullOrEmpty(arrayPropertyPath.stringValue))
@@ -243,7 +236,7 @@ namespace Vertx.Editor
 			using (new EditorGUIExtensions.OutlineScope(false, false))
 			{
 				//Icon Header
-				GUILayout.Label(iconLabel, CenteredMiniLabel);
+				GUILayout.Label(iconLabel, EditorGUIExtensions.CenteredMiniLabel);
 
 				if (typeIsTextureOrSprite)
 					EditorGUILayout.HelpBox("Type inherits from Texture or Sprite. Icon is automated.", MessageType.Info);
@@ -268,13 +261,16 @@ namespace Vertx.Editor
 						if (isArray)
 						{
 							float yBefore = rect.yMax;
-							ArrayDataDrawer.OnGUI(ref rect, iconPropertyPath, iconArrayPropertyInformation, referenceObject, typeStrings);
+							ArrayDataDrawer.OnGUI(ref rect, iconPropertyPath, iconArrayPropertyInformation, referenceObject, typeStrings, rect.x - 2);
 							GUILayoutUtility.GetRect(0, rect.yMax - yBefore);
 						}
 					}
 				}
 
-				GUILayout.Label(propertyLabel, CenteredMiniLabel);
+				GUILayout.Space(6);
+				EditorGUIExtensions.DrawSplitter(alignXMinToZero: false);
+				GUILayout.Space(4);
+				GUILayout.Label(propertyLabel, EditorGUIExtensions.CenteredMiniLabel);
 				using (new EditorGUI.DisabledScope(true))
 				{
 					EditorGUILayout.TextField(titleLabel, "Name");
@@ -294,7 +290,7 @@ namespace Vertx.Editor
 					Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
 					if (GUI.Button(rect, addLabel))
 					{
-						if(propertyDropdown == null)
+						if (propertyDropdown == null)
 							CreatePropertyDropdown();
 						propertyDropdown.Show(rect);
 					}
