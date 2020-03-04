@@ -101,8 +101,9 @@ namespace Vertx.Editor
 
 			bool changedConfiguration = this.configuration != configuration;
 			this.configuration = configuration;
-			titleContent = new GUIContent(configuration.name);
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
+			GUIContent objectContent = EditorGUIUtility.ObjectContent(null, type);
+			titleContent = new GUIContent(configuration.name, objectContent.image);
 
 			if (treeViewState == null)
 				treeViewState = new TreeViewState();
@@ -149,7 +150,8 @@ namespace Vertx.Editor
 			}
 
 			//Append all the headers
-			foreach (var column in GetColumnsFromConfiguration(configuration))
+			var columns = GetColumnsFromConfiguration(configuration);
+			foreach (var column in columns)
 				Append(column.headerContent.text);
 			sB.Append('\n');
 
@@ -159,14 +161,18 @@ namespace Vertx.Editor
 			{
 				using (SerializedObject sO = new SerializedObject(t))
 				{
-					foreach (ColumnContext context in columnContexts)
+					for (var i = 0; i < columnContexts.Count; i++)
 					{
+						ColumnContext context = columnContexts[i];
 						SerializedProperty property = context.GetValue(sO);
-						if(property != null)
-							sB.Append(AssetListUtility.GetValueForRegex(property));
+						if (property != null)
+							sB.Append(AssetListUtility.GetString(property, configuration,
+								i == 0 ? null : configuration.Columns[i - 1]//Offset because of the Name property.
+							));
 						sB.Append('\t');
 					}
 				}
+
 				sB.Append('\n');
 			}
 
