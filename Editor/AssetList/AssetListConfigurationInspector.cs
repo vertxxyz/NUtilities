@@ -23,6 +23,7 @@ namespace Vertx.Editor
 		private SerializedProperty
 			assetType,
 			missingPropertyDisplay,
+			additionalColumns,
 			columns,
 			typeString,
 			nameDisplay,
@@ -98,6 +99,7 @@ namespace Vertx.Editor
 			base.OnEnable();
 			assetType = serializedObject.FindProperty("assetType");
 			missingPropertyDisplay = serializedObject.FindProperty("missingPropertyDisplay");
+			additionalColumns = serializedObject.FindProperty("additionalColumns");
 			columns = serializedObject.FindProperty("columns");
 			typeString = serializedObject.FindProperty("typeString");
 			nameDisplay = serializedObject.FindProperty("nameDisplay");
@@ -238,6 +240,7 @@ namespace Vertx.Editor
 			if (missingPropertyDisplay.isExpanded)
 			{
 				EditorGUILayout.PropertyField(missingPropertyDisplay);
+				EditorGUILayout.PropertyField(additionalColumns);
 			}
 			EditorGUIExtensions.DrawSplitter();
 

@@ -113,6 +113,18 @@ namespace Vertx.Editor
 					throw new ArgumentOutOfRangeException(nameof(nameDisplay), nameDisplay, null);
 			}
 		}
+		
+		/// <summary>
+		/// Constructor for Path
+		/// </summary>
+		public ColumnContext(AssetListConfiguration configuration, AssetListWindow window)
+		{
+			propertyPath = string.Empty;
+			Texture2D persistent = null;//TODO assign appropriate icon
+			Texture2D inScene = null;//TODO assign appropriate icon
+			Texture2D GetIcon(Object o) => EditorUtility.IsPersistent(o) ? persistent : inScene;
+			onGUI = (rect, property) => PathLabelWithIcon(rect, property, (Func<Object, Texture2D>) GetIcon);
+		}
 
 		public ColumnContext(AssetListConfiguration.ColumnConfiguration c)
 		{
@@ -456,6 +468,15 @@ namespace Vertx.Editor
 
 		private static void ReadonlyNicifiedCenteredLabelProperty(Rect r, string label)
 			=> EditorGUI.LabelField(r, ObjectNames.NicifyVariableName(label), CenteredMiniLabel);
+
+		#endregion
+
+		#region Path GUI
+
+		private static void PathLabelWithIcon(Rect rect, SerializedProperty property, Func<Object, Texture2D> getIcon)
+		{
+			throw new NotImplementedException();
+		}
 
 		#endregion
 

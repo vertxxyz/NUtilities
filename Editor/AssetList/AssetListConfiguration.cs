@@ -25,6 +25,13 @@ namespace Vertx.Editor
 		Blank
 	}
 
+	[Flags]
+	internal enum AdditionalColumns
+	{
+		None = 0,
+		Path = 1
+	}
+
 	internal class AssetListConfiguration : ScriptableObject
 	{
 		[SerializeField]
@@ -36,6 +43,11 @@ namespace Vertx.Editor
 		private MissingPropertyDisplay missingPropertyDisplay;
 
 		public MissingPropertyDisplay MissingPropertyDisplay => missingPropertyDisplay;
+
+		[SerializeField, EnumFlags]
+		private AdditionalColumns additionalColumns;
+
+		public AdditionalColumns AdditionalColumns => additionalColumns;
 
 		[Serializable]
 		internal class ColumnConfiguration

@@ -193,11 +193,23 @@ namespace Vertx.Editor
 				}
 			};
 
-
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
 				new ColumnContext(configuration, configuration.NameDisplay, this)
 			};
+
+			if ((configuration.AdditionalColumns & AdditionalColumns.Path) != 0)
+			{
+				columns.Add(new MultiColumnHeaderState.Column
+				{
+					headerContent = new GUIContent("Path"),
+					allowToggleVisibility = true,
+					autoResize = true,
+					headerTextAlignment = TextAlignment.Center,
+					sortingArrowAlignment = TextAlignment.Left
+				});
+				contexts.Add(new ColumnContext(configuration, this));
+			}
 
 			if (configuration.Columns != null)
 			{
