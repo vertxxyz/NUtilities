@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -67,12 +68,24 @@ namespace Vertx.Editor
 	internal class ColumnContext
 	{
 		private readonly string propertyPath;
-		private Action<Rect, SerializedProperty> onGUI;
+		private Action<Rect, SerializedObject, SerializedProperty> onGUI;
 		private readonly Func<SerializedObject, SerializedProperty> getPropertyOverride;
+		private readonly PropertyOverride propertyOverride;
+		private readonly int configColumnIndex;
+		public int ConfigColumnIndex => configColumnIndex;
+
+		public enum PropertyOverride
+		{
+			None,
+			Name,
+			Path
+		}
 
 		public ColumnContext(AssetListConfiguration c, NamePropertyDisplay nameDisplay, AssetListWindow window)
 		{
-			propertyPath = "m_Name";
+			configColumnIndex = -1;
+			propertyPath = null;
+			propertyOverride = PropertyOverride.Name;
 			Func<SerializedObject, SerializedProperty> getIconProperty = null;
 			if (!string.IsNullOrEmpty(c.IconPropertyPath))
 			{
@@ -98,37 +111,41 @@ namespace Vertx.Editor
 			switch (nameDisplay)
 			{
 				case NamePropertyDisplay.Label:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, GUI.Label);
+					onGUI = (rect, sO, property) => LargeObjectLabelWithPing(rect, sO, getIconProperty, window, GUI.Label);
 					break;
 				case NamePropertyDisplay.NicifiedLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyNicifiedLabelProperty);
+					onGUI = (rect, sO, property) => LargeObjectLabelWithPing(rect, sO, getIconProperty, window, ReadonlyNicifiedLabelProperty);
 					break;
 				case NamePropertyDisplay.CenteredLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyCenteredLabelProperty);
+					onGUI = (rect, sO, property) => LargeObjectLabelWithPing(rect, sO, getIconProperty, window, ReadonlyCenteredLabelProperty);
 					break;
 				case NamePropertyDisplay.NicifiedCenteredLabel:
-					onGUI = (rect, property) => LargeObjectLabelWithPing(rect, property, getIconProperty, window, ReadonlyNicifiedCenteredLabelProperty);
+					onGUI = (rect, sO, property) => LargeObjectLabelWithPing(rect, sO, getIconProperty, window, ReadonlyNicifiedCenteredLabelProperty);
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(nameDisplay), nameDisplay, null);
 			}
 		}
-		
+
 		/// <summary>
 		/// Constructor for Path
 		/// </summary>
 		public ColumnContext(AssetListConfiguration configuration, AssetListWindow window)
 		{
-			propertyPath = string.Empty;
-			Texture2D persistent = null;//TODO assign appropriate icon
-			Texture2D inScene = null;//TODO assign appropriate icon
-			Texture2D GetIcon(Object o) => EditorUtility.IsPersistent(o) ? persistent : inScene;
-			onGUI = (rect, property) => PathLabelWithIcon(rect, property, (Func<Object, Texture2D>) GetIcon);
+			configColumnIndex = -1;
+			propertyPath = null;
+			propertyOverride = PropertyOverride.Path;
+			Texture persistent = EditorGUIUtility.IconContent("Project").image;
+			Texture inScene = EditorGUIUtility.ObjectContent(null, typeof(SceneAsset)).image;
+			Texture GetIcon(Object o) => EditorUtility.IsPersistent(o) ? persistent : inScene;
+			onGUI = (rect, sO, property) => PathLabelWithIcon(rect, sO, window, GetIcon);
 		}
 
-		public ColumnContext(AssetListConfiguration.ColumnConfiguration c)
+		public ColumnContext(AssetListConfiguration.ColumnConfiguration c, int configColumnIndex)
 		{
+			this.configColumnIndex = configColumnIndex;
 			propertyPath = c.PropertyPath;
+			propertyOverride = PropertyOverride.None;
 			if (!c.IsArray)
 			{
 				ConfigureGUI(c.PropertyType);
@@ -196,16 +213,16 @@ namespace Vertx.Editor
 								onGUI = ReadonlyProperty;
 								break;
 							case StringPropertyDisplay.ReadonlyLabel:
-								onGUI = (rect, property) => GUI.Label(rect, property.stringValue);
+								onGUI = (rect, sO, property) => GUI.Label(rect, property.stringValue);
 								break;
 							case StringPropertyDisplay.ReadonlyNicifiedLabel:
-								onGUI = (rect, property) => ReadonlyNicifiedLabelProperty(rect, property.stringValue);
+								onGUI = (rect, sO, property) => ReadonlyNicifiedLabelProperty(rect, property.stringValue);
 								break;
 							case StringPropertyDisplay.ReadonlyCenteredLabel:
-								onGUI = (rect, property) => ReadonlyCenteredLabelProperty(rect, property.stringValue);
+								onGUI = (rect, sO, property) => ReadonlyCenteredLabelProperty(rect, property.stringValue);
 								break;
 							case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
-								onGUI = (rect, property) => ReadonlyNicifiedCenteredLabelProperty(rect, property.stringValue);
+								onGUI = (rect, sO, property) => ReadonlyNicifiedCenteredLabelProperty(rect, property.stringValue);
 								break;
 							default:
 								throw new ArgumentOutOfRangeException(nameof(c.StringDisplay), c.StringDisplay, null);
@@ -222,10 +239,10 @@ namespace Vertx.Editor
 								onGUI = ReadonlyProperty;
 								break;
 							case ColorPropertyDisplay.ReadonlySimplified:
-								onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, false);
+								onGUI = (rect, sO, property) => ReadonlyColorSimplified(rect, property, false);
 								break;
 							case ColorPropertyDisplay.ReadonlySimplifiedHDR:
-								onGUI = (rect, property) => ReadonlyColorSimplified(rect, property, true);
+								onGUI = (rect, sO, property) => ReadonlyColorSimplified(rect, property, true);
 								break;
 							default:
 								throw new ArgumentOutOfRangeException(nameof(c.ColorDisplay), c.ColorDisplay, null);
@@ -242,7 +259,7 @@ namespace Vertx.Editor
 								onGUI = ReadonlyProperty;
 								break;
 							case ObjectPropertyDisplay.ReadonlyLabelWithIcon:
-								onGUI = (rect, property) =>
+								onGUI = (rect, sO, property) =>
 								{
 									if (property.objectReferenceValue == null)
 										GUI.Label(rect, "Null");
@@ -361,14 +378,47 @@ namespace Vertx.Editor
 			return getProperty;
 		}
 
-		public void OnGUI(Rect cellRect, SerializedProperty @object) => onGUI?.Invoke(cellRect, @object);
-
-		public SerializedProperty GetValue(SerializedObject context) => getPropertyOverride != null ? getPropertyOverride(context) : context.FindProperty(propertyPath);
-
-		public object GetSortableValue(SerializedObject context)
+		public void OnGUI(Rect cellRect, SerializedObject serializedObject, SerializedProperty property) => onGUI?.Invoke(cellRect, serializedObject, property);
+		
+		
+		public PropertyOverride TryGetValue(SerializedObject context, out SerializedProperty property, out object alternateValue)
 		{
-			SerializedProperty property = GetValue(context);
-			return AssetListUtility.GetSortableValue(property);
+			if (getPropertyOverride != null)
+				property = getPropertyOverride(context);
+			else
+			{
+				if (propertyPath == null)
+				{
+					property = null;
+					alternateValue = GetAlternateValues(context);
+					return propertyOverride;
+				}
+
+				property = context.FindProperty(propertyPath);
+			}
+
+			alternateValue = null;
+			return PropertyOverride.None;
+		}
+
+		public object GetSortableValue(SerializedObject context) => 
+			TryGetValue(context, out var property, out object alternateValue) == PropertyOverride.None ?
+				AssetListUtility.GetSortableValue(property) : 
+				alternateValue;
+
+		private object GetAlternateValues(SerializedObject context)
+		{
+			switch (propertyOverride)
+			{
+				case PropertyOverride.None:
+					throw new NotImplementedException($"{this} has no {nameof(PropertyOverride)} configured as {nameof(TryGetValue)} failed.");
+				case PropertyOverride.Name:
+					return context.targetObject.name;
+				case PropertyOverride.Path:
+					return AssetListUtility.GetPathForObject(context.targetObject);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
 		}
 
 		public void DoTint()
@@ -382,9 +432,9 @@ namespace Vertx.Editor
 
 		#region Default GUIs
 
-		private static void Property(Rect r, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, false);
+		private static void Property(Rect r, SerializedObject serializedObject, SerializedProperty p) => EditorGUI.PropertyField(r, p, GUIContent.none, false);
 
-		private static void ReadonlyProperty(Rect r, SerializedProperty p)
+		private static void ReadonlyProperty(Rect r, SerializedObject serializedObject, SerializedProperty p)
 		{
 			using (new EditorGUI.DisabledScope(true))
 				EditorGUI.PropertyField(r, p, GUIContent.none, false);
@@ -392,12 +442,12 @@ namespace Vertx.Editor
 
 		private static void LargeObjectLabelWithPing(
 			Rect r,
-			SerializedProperty p,
+			SerializedObject sO,
 			Func<SerializedObject, SerializedProperty> getIconProperty,
 			AssetListWindow window,
 			Action<Rect, string> labelGUI)
 		{
-			Object target = p.serializedObject.targetObject;
+			Object target = sO.targetObject;
 			if (!(target is Texture texture))
 			{
 				if (target is Sprite sprite)
@@ -408,7 +458,7 @@ namespace Vertx.Editor
 						texture = null;
 					else
 					{
-						SerializedProperty iconProperty = getIconProperty(p.serializedObject);
+						SerializedProperty iconProperty = getIconProperty(sO);
 						if (iconProperty == null)
 							texture = null;
 						else
@@ -431,8 +481,7 @@ namespace Vertx.Editor
 
 			Event e = Event.current;
 
-			float h = r.height - 2;
-			var iconRect = new Rect(r.x + 10, r.y + 1, h, h);
+			Rect iconRect = GetIconRect(r);
 			if (texture != null)
 			{
 				AssetListUtility.DrawTextureInRect(iconRect, texture);
@@ -440,7 +489,7 @@ namespace Vertx.Editor
 					window.HoveredIcon = texture;
 			}
 
-			var labelRect = new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height);
+			var labelRect = GetLabelRect(r);
 			labelGUI.Invoke(labelRect, target.name);
 			if (e.type == EventType.MouseDown && e.button == 0)
 			{
@@ -458,6 +507,14 @@ namespace Vertx.Editor
 
 		#endregion
 
+		static Rect GetIconRect(Rect r, int padding = 10)
+		{
+			float h = r.height - 2;
+			return new Rect(r.x + padding, r.y + 1, h, h);
+		}
+
+		static Rect GetLabelRect(Rect r) => new Rect(r.x + 10 + r.height, r.y, r.width - 10 - r.height, r.height);
+
 		#region Name GUIs
 
 		private static void ReadonlyNicifiedLabelProperty(Rect r, string label)
@@ -473,37 +530,59 @@ namespace Vertx.Editor
 
 		#region Path GUI
 
-		private static void PathLabelWithIcon(Rect rect, SerializedProperty property, Func<Object, Texture2D> getIcon)
+		private static readonly Dictionary<string, GUIContent> pathGUIContentLookup = new Dictionary<string, GUIContent>();
+
+		static GUIContent GetGUIContent(string path)
 		{
-			throw new NotImplementedException();
+			if (pathGUIContentLookup.TryGetValue(path, out var value))
+				return value;
+			//This is a cheat method to insert tooltips.
+			value = new GUIContent($"      {path}", path.Replace('/', '\n'));
+			pathGUIContentLookup.Add(path, value);
+			return value;
+		}
+
+		private static void PathLabelWithIcon(Rect rect, SerializedObject serializedObject, AssetListWindow window, Func<Object, Texture> getIcon)
+		{
+			Object @object = serializedObject.targetObject;
+			Texture texture = getIcon(@object);
+			if (texture != null)
+			{
+				Rect iconRect = GetIconRect(rect, 0);
+				AssetListUtility.DrawTextureInRect(iconRect, texture);
+			}
+
+			//Rect labelRect = GetLabelRect(rect);
+			string path = AssetListUtility.GetPathForObject(@object);
+			EditorGUI.LabelField(rect, GetGUIContent(path));
 		}
 
 		#endregion
 
 		#region Numerical GUIs
 
-		private static void NumericalProperty(Rect r, SerializedProperty p) =>
+		private static void NumericalProperty(Rect r, SerializedObject serializedObject, SerializedProperty p) =>
 			GUI.Label(
 				r,
 				(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue).ToString(CultureInfo.InvariantCulture),
 				EditorStyles.miniLabel
 			);
 
-		private static void NumericalPropertyPercentage(Rect r, SerializedProperty p) =>
+		private static void NumericalPropertyPercentage(Rect r, SerializedObject serializedObject, SerializedProperty p) =>
 			GUI.Label(
 				r,
 				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue):##0.##}%",
 				EditorStyles.miniLabel
 			);
 
-		private static void NumericalPropertyPercentageNormalised(Rect r, SerializedProperty p) =>
+		private static void NumericalPropertyPercentageNormalised(Rect r, SerializedObject serializedObject, SerializedProperty p) =>
 			GUI.Label(
 				r,
 				$"{(p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue) * 100:##0.##}%",
 				EditorStyles.miniLabel
 			);
 
-		private static void NumericalPropertyProgressBar(Rect r, SerializedProperty p)
+		private static void NumericalPropertyProgressBar(Rect r, SerializedObject serializedObject, SerializedProperty p)
 		{
 			float progress = p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue;
 			EditorGUI.ProgressBar(
@@ -513,7 +592,7 @@ namespace Vertx.Editor
 			);
 		}
 
-		private static void NumericalPropertyProgressBarNormalised(Rect r, SerializedProperty p)
+		private static void NumericalPropertyProgressBarNormalised(Rect r, SerializedObject serializedObject, SerializedProperty p)
 		{
 			float progress = p.propertyType == SerializedPropertyType.Integer ? p.intValue : p.floatValue;
 			EditorGUI.ProgressBar(
@@ -537,7 +616,7 @@ namespace Vertx.Editor
 			}
 		});
 
-		private static void ReadonlyEnumProperty(Rect r, SerializedProperty p)
+		private static void ReadonlyEnumProperty(Rect r, SerializedObject serializedObject, SerializedProperty p)
 			=> EditorGUI.LabelField(r, p.enumNames[p.enumValueIndex], CenteredMiniLabel);
 
 		#endregion

@@ -224,78 +224,89 @@ namespace Vertx.Editor
 					throw new ArgumentOutOfRangeException($"{property.propertyType} is not supported by {nameof(GetValueForRegex)}");
 			}
 		}
-		
+
+		public static string GetString(float floatValue, NumericalPropertyDisplay numericalDisplay)
+		{
+			switch (numericalDisplay)
+			{
+				case NumericalPropertyDisplay.Property:
+				case NumericalPropertyDisplay.ReadonlyProperty:
+				case NumericalPropertyDisplay.ReadonlyLabel:
+					return floatValue.ToString();
+				case NumericalPropertyDisplay.ReadonlyProgressBar:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
+					return $"{floatValue:##0.##}%";
+				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
+					return $"{floatValue * 100:##0.##}%";
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(int intValue, NumericalPropertyDisplay numericalDisplay)
+		{
+			switch (numericalDisplay)
+			{
+				case NumericalPropertyDisplay.Property:
+				case NumericalPropertyDisplay.ReadonlyProperty:
+				case NumericalPropertyDisplay.ReadonlyLabel:
+					return intValue.ToString();
+				case NumericalPropertyDisplay.ReadonlyProgressBar:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
+					return $"{intValue:##0.##}%";
+				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
+					return $"{intValue * 100:##0.##}%";
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(string stringValue, StringPropertyDisplay stringDisplay)
+		{
+			switch (stringDisplay)
+			{
+				case StringPropertyDisplay.Property:
+				case StringPropertyDisplay.ReadonlyProperty:
+				case StringPropertyDisplay.ReadonlyLabel:
+				case StringPropertyDisplay.ReadonlyCenteredLabel:
+					return stringValue;
+				case StringPropertyDisplay.ReadonlyNicifiedLabel:
+				case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
+					return ObjectNames.NicifyVariableName(stringValue);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(string stringValue, NamePropertyDisplay nameDisplay)
+		{
+			switch (nameDisplay)
+			{
+				case NamePropertyDisplay.Label:
+				case NamePropertyDisplay.CenteredLabel:
+					return stringValue;
+				case NamePropertyDisplay.NicifiedCenteredLabel:
+				case NamePropertyDisplay.NicifiedLabel:
+					return ObjectNames.NicifyVariableName(stringValue);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
 		public static string GetString(SerializedProperty property, AssetListConfiguration configuration, AssetListConfiguration.ColumnConfiguration columnConfig)
 		{
 			switch (property.propertyType)
 			{
 				case SerializedPropertyType.Float:
-					switch (columnConfig.NumericalDisplay)
-					{
-						case NumericalPropertyDisplay.Property:
-						case NumericalPropertyDisplay.ReadonlyProperty:
-						case NumericalPropertyDisplay.ReadonlyLabel:
-							return property.floatValue.ToString();
-						case NumericalPropertyDisplay.ReadonlyProgressBar:
-						case NumericalPropertyDisplay.ReadonlyPercentageLabel:
-							return $"{property.floatValue:##0.##}%";
-						case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
-						case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
-							return $"{property.floatValue * 100:##0.##}%";
-						default:
-							throw new ArgumentOutOfRangeException();
-					}
+					return GetString(property.floatValue, columnConfig.NumericalDisplay);
 				case SerializedPropertyType.Integer:
-					switch (columnConfig.NumericalDisplay)
-					{
-						case NumericalPropertyDisplay.Property:
-						case NumericalPropertyDisplay.ReadonlyProperty:
-						case NumericalPropertyDisplay.ReadonlyLabel:
-							return property.intValue.ToString();
-						case NumericalPropertyDisplay.ReadonlyProgressBar:
-						case NumericalPropertyDisplay.ReadonlyPercentageLabel:
-							return $"{property.intValue:##0.##}%";
-						case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
-						case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
-							return $"{property.intValue * 100:##0.##}%";
-						default:
-							throw new ArgumentOutOfRangeException();
-					}
+					return GetString(property.intValue, columnConfig.NumericalDisplay);
 				case SerializedPropertyType.Boolean:
 					return property.boolValue.ToString();
 				case SerializedPropertyType.String:
-				{
-					string value;
-					if (property.propertyPath == "m_Name" && property.stringValue == string.Empty || columnConfig == null)
-					{
-						value = property.serializedObject.targetObject.name;
-						switch (configuration.NameDisplay)
-						{
-							case NamePropertyDisplay.Label:
-							case NamePropertyDisplay.CenteredLabel:
-								return value;
-							case NamePropertyDisplay.NicifiedCenteredLabel:
-							case NamePropertyDisplay.NicifiedLabel:
-								return ObjectNames.NicifyVariableName(value);
-							default:
-								throw new ArgumentOutOfRangeException();
-						}
-					}
-					value = property.stringValue;
-					switch (columnConfig.StringDisplay)
-					{
-						case StringPropertyDisplay.Property:
-						case StringPropertyDisplay.ReadonlyProperty:
-						case StringPropertyDisplay.ReadonlyLabel:
-						case StringPropertyDisplay.ReadonlyCenteredLabel:
-							return value;
-						case StringPropertyDisplay.ReadonlyNicifiedLabel:
-						case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
-							return ObjectNames.NicifyVariableName(value);
-						default:
-							throw new ArgumentOutOfRangeException();
-					}
-				}
+					return GetString(property.stringValue, columnConfig.StringDisplay);
 				case SerializedPropertyType.ObjectReference:
 					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
 				case SerializedPropertyType.LayerMask:
@@ -379,8 +390,6 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Float:
 					return property.floatValue;
 				case SerializedPropertyType.String:
-					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
-						return property.serializedObject.targetObject.name;
 					return property.stringValue;
 				case SerializedPropertyType.ObjectReference:
 					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
@@ -596,6 +605,35 @@ namespace Vertx.Editor
 					return true;
 				default:
 					return false;
+			}
+		}
+
+		public static string GetPathForObject(Object @object)
+		{
+			if (EditorUtility.IsPersistent(@object))
+			{
+				//Asset
+				return AssetDatabase.GetAssetPath(@object);
+			}
+			//In-Scene
+			if (TryGetTransform(out var t))
+				return AnimationUtility.CalculateTransformPath(t, null);
+			Debug.LogError($"{@object} is in scene but {nameof(TryGetTransform)} failed.");
+			return string.Empty;
+
+			bool TryGetTransform(out Transform transform)
+			{
+				switch (@object)
+				{
+					case Component component:
+						transform = component.transform;
+						return true;
+					case GameObject gameObject:
+						transform = gameObject.transform;
+						return true;
+				}
+				transform = null;
+				return false;
 			}
 		}
 	}

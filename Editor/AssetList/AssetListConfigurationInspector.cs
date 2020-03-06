@@ -409,7 +409,6 @@ namespace Vertx.Editor
 
 				if (prop.propertyType == SerializedPropertyType.Generic && prop.isArray)
 				{
-					//TODO handle arrays. Check whether they have a relevant property in them.
 					bool hasTextureProperty = false;
 					SerializedProperty temp = prop.Copy();
 					SerializedProperty end = prop.GetEndProperty();

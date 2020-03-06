@@ -161,14 +161,28 @@ namespace Vertx.Editor
 			{
 				using (SerializedObject sO = new SerializedObject(t))
 				{
-					for (var i = 0; i < columnContexts.Count; i++)
+					foreach (ColumnContext context in columnContexts)
 					{
-						ColumnContext context = columnContexts[i];
-						SerializedProperty property = context.GetValue(sO);
-						if (property != null)
-							sB.Append(AssetListUtility.GetString(property, configuration,
-								i == 0 ? null : configuration.Columns[i - 1]//Offset because of the Name property.
-							));
+						switch (context.TryGetValue(sO, out SerializedProperty property, out object alternateValue))
+						{
+							case ColumnContext.PropertyOverride.None:
+								if (property != null)
+									sB.Append(AssetListUtility.GetString(
+										property,
+										configuration,
+										configuration.Columns[context.ConfigColumnIndex]
+									));
+								break;
+							case ColumnContext.PropertyOverride.Name:
+								sB.Append(AssetListUtility.GetString((string) alternateValue, configuration.NameDisplay));
+								break;
+							case ColumnContext.PropertyOverride.Path:
+								sB.Append((string)alternateValue);
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+
 						sB.Append('\t');
 					}
 				}
@@ -189,7 +203,8 @@ namespace Vertx.Editor
 					allowToggleVisibility = false,
 					autoResize = true,
 					headerTextAlignment = TextAlignment.Center,
-					sortingArrowAlignment = TextAlignment.Left
+					sortingArrowAlignment = TextAlignment.Left,
+					minWidth = 30
 				}
 			};
 
@@ -206,17 +221,19 @@ namespace Vertx.Editor
 					allowToggleVisibility = true,
 					autoResize = true,
 					headerTextAlignment = TextAlignment.Center,
-					sortingArrowAlignment = TextAlignment.Left
+					sortingArrowAlignment = TextAlignment.Left,
+					minWidth = 30
 				});
 				contexts.Add(new ColumnContext(configuration, this));
 			}
 
 			if (configuration.Columns != null)
 			{
-				foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
+				for (var i = 0; i < configuration.Columns.Length; i++)
 				{
+					AssetListConfiguration.ColumnConfiguration c = configuration.Columns[i];
 					var columnTitleContent = new GUIContent(c.Title);
-					contexts.Add(new ColumnContext(c));
+					contexts.Add(new ColumnContext(c, i));
 
 					columns.Add(new MultiColumnHeaderState.Column
 					{
@@ -348,13 +365,13 @@ namespace Vertx.Editor
 				for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
 				{
 					Rect cellRect = args.GetCellRect(i);
-					CellGUI(cellRect, serializedObject, args.GetColumn(i), ref args);
+					CellGUI(cellRect, serializedObject, args.GetColumn(i));
 				}
 
 				GUI.color = Color.white;
 			}
 
-			private void CellGUI(Rect cellRect, SerializedObject serializedObject, int columnIndex, ref RowGUIArgs args)
+			private void CellGUI(Rect cellRect, SerializedObject serializedObject, int columnIndex)
 			{
 				ColumnContext columnContext = window.columnContexts[columnIndex];
 				if (columnContext == null)
@@ -363,24 +380,27 @@ namespace Vertx.Editor
 					return;
 				}
 
-				SerializedProperty property = columnContext.GetValue(serializedObject);
-				if (property == null)
+				if (columnContext.TryGetValue(serializedObject, out SerializedProperty property, out _) == ColumnContext.PropertyOverride.None)
 				{
-					switch (window.configuration.MissingPropertyDisplay)
+					if (property == null)
 					{
-						case MissingPropertyDisplay.RedWithWarning:
-							EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
-							GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
-							break;
-						case MissingPropertyDisplay.Blank:
-							break;
-						default:
-							throw new ArgumentOutOfRangeException();
+						switch (window.configuration.MissingPropertyDisplay)
+						{
+							case MissingPropertyDisplay.RedWithWarning:
+								EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
+								GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
+								break;
+							case MissingPropertyDisplay.Blank:
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+
+						return;
 					}
-					return;
 				}
 
-				columnContext.OnGUI(cellRect, property);
+				columnContext.OnGUI(cellRect, serializedObject, property);
 			}
 
 
