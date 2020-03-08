@@ -190,7 +190,7 @@ namespace Vertx.Editor
 				sB.Append('\n');
 			}
 
-			CodeUtility.SaveAndWriteFileDialog(configuration.name, sB.ToString(), "tsv");
+			CodeUtils.SaveAndWriteFileDialog(configuration.name, sB.ToString(), "tsv");
 		}
 
 		private MultiColumnHeaderState.Column[] GetColumnsFromConfiguration(AssetListConfiguration configuration)

@@ -56,7 +56,7 @@ namespace Vertx.Editor
 			searchPosition.xMin = selectPosition.xMax;
 			if (GUI.Button(searchPosition, searchContentToUse, EditorStyles.miniButtonRight))
 			{
-				EditorGUIExtensions.SetProjectBrowserSearch($"t:{target.GetType().FullName}");
+				EditorGUIUtils.SetProjectBrowserSearch($"t:{target.GetType().FullName}");
 			}
 		}
 

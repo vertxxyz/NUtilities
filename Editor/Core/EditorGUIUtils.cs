@@ -6,7 +6,7 @@ using UnityEditor;
 
 namespace Vertx.Extensions
 {
-	public static class EditorGUIExtensions
+	public static class EditorGUIUtils
 	{
 		#region Exponential Slider
 

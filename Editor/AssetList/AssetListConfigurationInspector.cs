@@ -186,7 +186,7 @@ namespace Vertx.Editor
 				{
 					if (heightOverrideLookup.TryGetValue(index, out float height))
 						return height;
-					return EditorGUIExtensions.HeightWithSpacing * 3;
+					return EditorGUIUtils.HeightWithSpacing * 3;
 				},
 				onReorderCallback = list => heightOverrideLookup.Clear(),
 				displayAdd = false,
@@ -235,22 +235,22 @@ namespace Vertx.Editor
 				}
 			}
 
-			if (EditorGUIExtensions.DrawHeaderWithFoldout(preferencesLabel, missingPropertyDisplay.isExpanded, headerXOffset: -16f))
+			if (EditorGUIUtils.DrawHeaderWithFoldout(preferencesLabel, missingPropertyDisplay.isExpanded, headerXOffset: -16f))
 				missingPropertyDisplay.isExpanded = !missingPropertyDisplay.isExpanded;
 			if (missingPropertyDisplay.isExpanded)
 			{
 				EditorGUILayout.PropertyField(missingPropertyDisplay);
 				EditorGUILayout.PropertyField(additionalColumns);
 			}
-			EditorGUIExtensions.DrawSplitter();
+			EditorGUIUtils.DrawSplitter();
 
 			GUILayout.Space(8);
 
-			using (new EditorGUIExtensions.ContainerScope(columnsLabel, -2))
-			using (new EditorGUIExtensions.OutlineScope(false, false))
+			using (new EditorGUIUtils.ContainerScope(columnsLabel, -2))
+			using (new EditorGUIUtils.OutlineScope(false, false))
 			{
 				//Icon Header
-				GUILayout.Label(iconLabel, EditorGUIExtensions.CenteredMiniLabel);
+				GUILayout.Label(iconLabel, EditorGUIUtils.CenteredMiniLabel);
 
 				if (typeIsTextureOrSprite)
 					EditorGUILayout.HelpBox("Type inherits from Texture or Sprite. Icon is automated.", MessageType.Info);
@@ -282,21 +282,18 @@ namespace Vertx.Editor
 				}
 
 				GUILayout.Space(6);
-				EditorGUIExtensions.DrawSplitter(alignXMinToZero: false);
+				EditorGUIUtils.DrawSplitter(alignXMinToZero: false);
 				GUILayout.Space(4);
-				GUILayout.Label(propertyLabel, EditorGUIExtensions.CenteredMiniLabel);
+				GUILayout.Label(propertyLabel, EditorGUIUtils.CenteredMiniLabel);
 				using (new EditorGUI.DisabledScope(true))
-				{
 					EditorGUILayout.TextField(titleLabel, "Name");
-					EditorGUILayout.TextField("Property Path", "m_Name");
-				}
 
 				EditorGUILayout.PropertyField(nameDisplay);
 			}
 
 			reorderableList.DoLayoutList();
 
-			using (new EditorGUIExtensions.OutlineScope())
+			using (new EditorGUIUtils.OutlineScope())
 			{
 				GUILayout.Label(searchlabel, EditorStyles.boldLabel);
 				if (ValidateReferenceObjectWithHelpWarning(referenceObject))
@@ -329,7 +326,7 @@ namespace Vertx.Editor
 			if (referenceObject != null)
 				return true;
 			rect.NextGUIRect();
-			rect.height = EditorGUIExtensions.HeightWithSpacing * 2;
+			rect.height = EditorGUIUtils.HeightWithSpacing * 2;
 			EditorGUI.HelpBox(rect, referenceObjectMissingWarning, MessageType.Warning);
 			return false;
 		}

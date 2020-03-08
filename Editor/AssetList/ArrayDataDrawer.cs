@@ -37,7 +37,7 @@ namespace Vertx.Editor
 		)
 		{
 			rect.NextGUIRect();
-			if (EditorGUIExtensions.DrawHeaderWithFoldout(
+			if (EditorGUIUtils.DrawHeaderWithFoldout(
 				rect,
 				new GUIContent("Array Property"),
 				propertyPath.isExpanded,
@@ -65,7 +65,7 @@ namespace Vertx.Editor
 					bool hasKey = !string.IsNullOrEmpty(key.stringValue);
 					rect.NextGUIRect();
 					rect.y += EditorGUIUtility.standardVerticalSpacing;
-					EditorGUI.LabelField(rect, hasKey ? keyAndQueryLabel : keyLabel, EditorGUIExtensions.CenteredBoldLabel);
+					EditorGUI.LabelField(rect, hasKey ? keyAndQueryLabel : keyLabel, EditorGUIUtils.CenteredBoldLabel);
 
 					rect.NextGUIRect();
 					using (new EditorGUI.DisabledScope(true))
@@ -103,7 +103,7 @@ namespace Vertx.Editor
 			{
 				r.NextGUIRect();
 				r.y += EditorGUIUtility.standardVerticalSpacing;
-				EditorGUI.LabelField(r, "Property", EditorGUIExtensions.CenteredBoldLabel);
+				EditorGUI.LabelField(r, "Property", EditorGUIUtils.CenteredBoldLabel);
 				r.NextGUIRect();
 				SerializedProperty arrayPropertyPath = arrayProperty.FindPropertyRelative("ArrayPropertyPath");
 				using (new EditorGUI.DisabledScope(true))

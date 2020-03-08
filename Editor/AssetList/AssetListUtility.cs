@@ -175,8 +175,6 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Float:
 					return property.floatValue.ToString(CultureInfo.InvariantCulture);
 				case SerializedPropertyType.String:
-					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
-						return property.serializedObject.targetObject.name;
 					return property.stringValue;
 				case SerializedPropertyType.ObjectReference:
 					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
