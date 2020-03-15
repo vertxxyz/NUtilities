@@ -5,13 +5,14 @@ namespace Vertx.Editor
 {
 	public sealed class ActionOperation : IPropertyDropdownItem
 	{
-		private readonly Func<bool> isValidForSelection;
 		private readonly Action actionWhenSelected;
 
-		private enum ActionTarget
+		public enum ActionTarget
 		{
 			None,
-			Objects
+			Selection,
+			Scene,
+			All
 		}
 
 
@@ -19,25 +20,31 @@ namespace Vertx.Editor
 		public string Path { get; }
 		private ActionTarget Target { get; }
 
-		public ActionOperation(string name, string path, Func<bool> isValidForSelection, Action actionWhenSelected)
+		public ActionOperation(ActionTarget target, string name, string path, Action actionWhenSelected)
 		{
-			this.isValidForSelection = isValidForSelection;
-			this.actionWhenSelected = actionWhenSelected;
-			Name = name;
-			Path = path;
-			Target = ActionTarget.Objects;
-		}
-
-		public ActionOperation(string name, string path, Action actionWhenSelected)
-		{
+			switch (target)
+			{
+				case ActionTarget.None:
+					break;
+				case ActionTarget.Selection:
+					name = $"{name} (Selection)";
+					break;
+				case ActionTarget.Scene:
+					name = $"{name} (In Scene)";
+					break;
+				case ActionTarget.All:
+					name = $"{name} (All)";
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(target), target, null);
+			}
+			
 			this.actionWhenSelected = actionWhenSelected;
 			Name = name;
 			Path = path;
 			Target = ActionTarget.None;
 		}
-
-
-		public bool Validate() => Target == ActionTarget.None || isValidForSelection();
+		
 		public void RunAction() => actionWhenSelected();
 	}
 }

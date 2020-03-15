@@ -8,49 +8,103 @@ namespace Vertx.Editor
 {
 	internal static class ActionWindowUtility
 	{
+		private enum ReturnType
+		{
+			Invalid,
+			Single,
+			Multiple
+		}
+
 		public static HashSet<ActionOperation> GetActions()
 		{
-			HashSet<ActionOperation> operations = new HashSet<ActionOperation>();
-			
+			HashSet<ActionOperation> allOperations = new HashSet<ActionOperation>();
+
 			TypeCache.MethodCollection methods = TypeCache.GetMethodsWithAttribute<ActionProviderAttribute>();
 			Type returnType = typeof(ActionOperation);
+			Type alternateReturnType = typeof(IEnumerable<ActionOperation>);
 			foreach (MethodInfo methodInfo in methods)
 			{
-				if (methodInfo.ReturnType != returnType)
-				{
-					LogWarning($"does not return a {nameof(ActionOperation)}");
-					continue;
-				}
-
 				if (!methodInfo.IsStatic)
 				{
 					LogWarning("is not static.");
 					continue;
 				}
 
-				ActionOperation operation;
-				try
+
+				ReturnType type;
+				if (methodInfo.ReturnType == returnType)
 				{
-					operation = (ActionOperation) methodInfo.Invoke(null, null);
+					type = ReturnType.Single;
 				}
-				catch (Exception e)
+				else if (methodInfo.ReturnType == alternateReturnType)
 				{
-					Debug.LogException(e);
+					type = ReturnType.Multiple;
+				}
+				else
+				{
+					LogWarning($"does not return a {nameof(ActionOperation)} or {nameof(IEnumerable<ActionOperation>)}");
 					continue;
 				}
 
-				if (operation == null)
+
+				switch (type)
 				{
-					LogWarning($"returned a null {nameof(ActionOperation)}.");
-					continue;
+					case ReturnType.Invalid:
+						continue;
+					case ReturnType.Single:
+					{
+						ActionOperation operation;
+						try
+						{
+							operation = (ActionOperation) methodInfo.Invoke(null, null);
+						}
+						catch (Exception e)
+						{
+							Debug.LogException(e);
+							continue;
+						}
+
+						AppendOperation(operation);
+						break;
+					}
+					case ReturnType.Multiple:
+					{
+						IEnumerable<ActionOperation> operations;
+						try
+						{
+							operations = (IEnumerable<ActionOperation>) methodInfo.Invoke(null, null);
+						}
+						catch (Exception e)
+						{
+							Debug.LogException(e);
+							continue;
+						}
+
+						foreach (ActionOperation operation in operations)
+						{
+							AppendOperation(operation);
+						}
+						break;
+					}
+					default:
+						throw new ArgumentOutOfRangeException();
 				}
-				
-				operations.Add(operation);
+
+				void AppendOperation(ActionOperation operation)
+				{
+					if (operation == null)
+					{
+						//LogWarning($"returned a null {nameof(ActionOperation)}.");
+						return;
+					}
+
+					allOperations.Add(operation);
+				}
 
 				void LogWarning(string message) => Debug.LogWarning($"{methodInfo.DeclaringType}.{methodInfo.Name} with {nameof(ActionProviderAttribute)} {message}");
 			}
 
-			return operations;
+			return allOperations;
 		}
 	}
 }

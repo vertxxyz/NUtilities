@@ -13,6 +13,7 @@ namespace Vertx.Editor
 	// ReSharper disable once ClassNeverInstantiated.Global
 	public class ActionProviderAttribute : Attribute { }
 
+	// ReSharper disable once UnusedType.Global
 	public class ActionWindow : AdvancedDropdown
 	{
 		private static AdvancedDropdownState state;
@@ -26,9 +27,7 @@ namespace Vertx.Editor
 			ActionWindow dropdown = new ActionWindow(State);
 			int screenWidth = Screen.currentResolution.width;
 			int screenHeight = Screen.currentResolution.height;
-
 			float width = Mathf.Min(screenWidth / 2f, 640);
-
 			dropdown.Show(new Rect(screenWidth / 2f - width / 2f, screenHeight - screenHeight / 2f, width, 0));
 		}
 
@@ -51,7 +50,15 @@ namespace Vertx.Editor
 				Debug.LogError($"{item.name} was not found. {nameof(PropertyDropdownUtils.GetStructure)} must have failed.");
 				return;
 			}
-			operation.RunAction();
+
+			try
+			{
+				operation.RunAction();
+			}
+			finally
+			{
+				EditorUtility.ClearProgressBar();
+			}
 		}
 	}
 }

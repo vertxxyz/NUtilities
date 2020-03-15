@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -79,11 +80,11 @@ namespace Core
 
 		private static readonly char[] separators = {'/', '\\'};
 
-		public static (Dictionary<int, T>, AdvancedDropdownItem) GetStructure<T>(IEnumerable<T> items, string rootName)
+		public static (Dictionary<int, T>, AdvancedDropdownItem) GetStructure<T>(IEnumerable<T> items, string rootName, Func<T, bool> enabledFunc = null)
 			where T : class, IPropertyDropdownItem
 		{
 			PropertyDropdownItem<T> rootItem = GenerateItems(items, rootName);
-			AdvancedDropdownItem root = ConvertToItems(rootItem, out var lookup);
+			AdvancedDropdownItem root = ConvertToItems(rootItem, out var lookup, enabledFunc);
 			return (lookup, root);
 		}
 
@@ -120,7 +121,7 @@ namespace Core
 			return root;
 		}
 
-		private static AdvancedDropdownItem ConvertToItems<T>(PropertyDropdownItem<T> rootItem, out Dictionary<int, T> lookup)
+		private static AdvancedDropdownItem ConvertToItems<T>(PropertyDropdownItem<T> rootItem, out Dictionary<int, T> lookup, Func<T, bool> enabledFunc)
 			where T : class, IPropertyDropdownItem
 		{
 			lookup = new Dictionary<int, T>();
@@ -149,7 +150,8 @@ namespace Core
 					AdvancedDropdownItem child;
 					toTarget.AddChild(child = new AdvancedDropdownItem(item.Name)
 					{
-						id = $"{item.Item.Path}/{item.Item.Name}".GetHashCode()
+						id = $"{item.Item.Path}/{item.Item.Name}".GetHashCode(),
+						enabled = enabledFunc?.Invoke(item.Item) ?? true
 					});
 					localLookup.Add(child.id, item.Item);
 					return true;
