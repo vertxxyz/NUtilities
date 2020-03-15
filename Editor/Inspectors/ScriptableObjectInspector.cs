@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿using System;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using Vertx.Extensions;
 
@@ -8,11 +10,30 @@ namespace Vertx.Editor
 	public class ScriptableObjectInspector : UnityEditor.Editor
 	{
 		private GUIContent selectContent, searchContent, searchContentSmall;
+		private static readonly Type scriptableObjectType = typeof(ScriptableObject);
+		private List<GUIContent> searchForMoreContent;
+		private List<string> moreContentTypeNames;
+		private bool hasMoreSearches;
+
+		private GUIContent dropdownIcon;
+		private GUIContent DropdownIcon => dropdownIcon ?? (dropdownIcon = EditorGUIUtility.IconContent("Icon Dropdown"));
 
 		protected virtual void OnEnable()
 		{
 			selectContent = new GUIContent("Select");
-			searchContent = new GUIContent($"Search for {target.GetType().Name}");
+			Type type = target.GetType();
+			searchContent = new GUIContent($"Search for {type.Name}");
+			if (type.BaseType != scriptableObjectType)
+			{
+				searchForMoreContent = new List<GUIContent>();
+				moreContentTypeNames = new List<string>();
+				do
+				{
+					type = type.BaseType;
+					searchForMoreContent.Add(new GUIContent($"Search for {type.Name}"));
+					moreContentTypeNames.Add(type.FullName);
+				} while (type.BaseType != scriptableObjectType && type.BaseType != null);
+			}
 			searchContentSmall = new GUIContent("Search");
 		}
 
@@ -24,8 +45,21 @@ namespace Vertx.Editor
 				Debug.LogWarning($"base.OnEnable was not called for {GetType().Name}, a class inheriting from {nameof(ScriptableObjectInspector)}.");
 				return;
 			}
-			
+
+			Event e = Event.current;
+
 			Rect position = GUILayoutUtility.GetLastRect();
+			Rect titleRect = position;
+			titleRect.xMin += 40;
+			titleRect.xMax -= 55;
+			titleRect.yMax -= 25;
+			if (e.isMouse && e.type == EventType.MouseDown && titleRect.Contains(e.mousePosition))
+			{
+				DragAndDrop.objectReferences = targets;
+				DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+				DragAndDrop.StartDrag("Drag SO");
+			}
+			
 			position.y = position.yMax - 21;
 			position.height = 15;
 			position.xMin += 46;
@@ -33,6 +67,8 @@ namespace Vertx.Editor
 
 			Rect selectPosition = position;
 			float searchWidth = EditorStyles.miniButton.CalcSize(searchContent).x;
+			if (searchForMoreContent != null)
+				searchWidth += 15;
 			selectPosition.width = Mathf.Min(position.width / 2f, position.width - searchWidth);
 
 
@@ -54,9 +90,39 @@ namespace Vertx.Editor
 			//Draw the Search button
 			Rect searchPosition = position;
 			searchPosition.xMin = selectPosition.xMax;
-			if (GUI.Button(searchPosition, searchContentToUse, EditorStyles.miniButtonRight))
+			if (searchForMoreContent == null)
 			{
-				EditorGUIUtils.SetProjectBrowserSearch($"t:{target.GetType().FullName}");
+				if (GUI.Button(searchPosition, searchContentToUse, EditorStyles.miniButtonRight))
+					EditorGUIUtils.SetProjectBrowserSearch($"t:{target.GetType().FullName}");
+			}
+			else
+			{
+				Rect searchPositionWhole = searchPosition;
+				searchPosition.width -= 15;
+				if (GUI.Button(searchPosition, searchContentToUse, EditorStyles.miniButtonMid))
+					EditorGUIUtils.SetProjectBrowserSearch($"t:{target.GetType().FullName}");
+				searchPosition.x = searchPosition.xMax - 1;
+				searchPosition.width = 15;
+				if (EditorGUI.DropdownButton(searchPosition, GUIContent.none, FocusType.Keyboard, EditorStyles.miniButtonRight))
+				{
+					GenericMenu menu = new GenericMenu();
+					for (var i = 0; i < searchForMoreContent.Count; i++)
+					{
+						int iLocal = i;
+						GUIContent content = searchForMoreContent[i];
+						menu.AddItem(content, false, () => EditorGUIUtils.SetProjectBrowserSearch($"t:{moreContentTypeNames[iLocal]}"));
+					}
+
+					searchPositionWhole.yMax += 3;
+					menu.DropDown(searchPositionWhole);
+				}
+
+				if (e.type == EventType.Repaint)
+				{
+					searchPosition.x += 1;
+					searchPosition.y += 3;
+					GUIStyle.none.Draw(searchPosition, DropdownIcon, false, false, false, false);
+				}
 			}
 		}
 

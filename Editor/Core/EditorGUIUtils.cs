@@ -291,7 +291,9 @@ namespace Vertx.Extensions
 				headerXOffset: headerXOffset
 			);
 			rect.Indent(headerXOffset);
-			if (Foldout(rect, expanded, noBoldOrIndent))
+			if (noBoldOrIndent)
+				rect.xMin -= 16;
+			if (Foldout(rect, expanded))
 				return true;
 			return ret;
 		}
