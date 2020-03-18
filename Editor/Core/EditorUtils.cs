@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Extensions
@@ -231,6 +233,57 @@ namespace Vertx.Extensions
 			}
 
 			return @object;
+		}
+
+		#endregion
+
+		#region Scene
+
+		public static IEnumerable<T> GetAllComponentsInScene<T>(Scene scene) where T : Component
+		{
+			GameObject[] roots = scene.GetRootGameObjects();
+			foreach (GameObject root in roots)
+			{
+				Transform @base = root.transform;
+				foreach (T component in OperateOnTransform(@base))
+					yield return component;
+			}
+
+			IEnumerable<T> OperateOnTransform(Transform @base)
+			{
+				//Get components
+				T[] components = @base.GetComponents<T>();
+				foreach (T component in components)
+					yield return component;
+					
+				foreach (Transform child in @base)
+				{
+					foreach (var component in OperateOnTransform(child))
+						yield return component;
+				}
+			}
+		}
+		
+		public static IEnumerable<GameObject> GetAllGameObjectsInScene(Scene scene)
+		{
+			GameObject[] roots = scene.GetRootGameObjects();
+			foreach (GameObject root in roots)
+			{
+				Transform @base = root.transform;
+				foreach (GameObject gameObject in OperateOnTransform(@base))
+					yield return gameObject;
+			}
+
+			IEnumerable<GameObject> OperateOnTransform(Transform @base)
+			{
+				//Get gameObject
+				yield return @base.gameObject;
+				foreach (Transform child in @base)
+				{
+					foreach (var component in OperateOnTransform(child))
+						yield return component;
+				}
+			}
 		}
 
 		#endregion
