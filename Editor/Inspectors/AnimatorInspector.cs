@@ -85,8 +85,8 @@ namespace Vertx.Editor
 					return false;
 			}
 
-			EditorGUIExtensions.DrawSplitter();
-			if (EditorGUIExtensions.DrawHeaderWithFoldout(bodyLabel, showBodyPicker))
+			EditorGUIUtils.DrawSplitter();
+			if (EditorGUIUtils.DrawHeaderWithFoldout(bodyLabel, showBodyPicker))
 				showBodyPicker = !showBodyPicker;
 			if (showBodyPicker)
 			{
@@ -121,7 +121,7 @@ namespace Vertx.Editor
 				}
 			}
 
-			EditorGUIExtensions.DrawSplitter();
+			EditorGUIUtils.DrawSplitter();
 			return true;
 		}
 

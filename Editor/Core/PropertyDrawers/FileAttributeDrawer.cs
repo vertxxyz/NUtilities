@@ -43,7 +43,7 @@ namespace Vertx.Editor
 			}
 			else
 			{
-				if (!EditorGUIExtensions.ButtonOverPreviousControl()) return sP.stringValue;
+				if (!EditorGUIUtils.ButtonOverPreviousControl()) return sP.stringValue;
 			}
 
 			string newFile = EditorUtility.OpenFilePanel("Choose File", path, string.Empty);

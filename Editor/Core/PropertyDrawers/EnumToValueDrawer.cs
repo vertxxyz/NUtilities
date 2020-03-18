@@ -166,7 +166,7 @@ namespace Vertx.Editor {
 			position.height = EditorGUIUtility.singleLineHeight;
 			using (new EditorGUI.PropertyScope(position, GUIContent.none, property))
 			{
-				if (EditorGUIExtensions.DrawHeaderWithFoldout(position, label, property.isExpanded, noBoldOrIndent: true))
+				if (EditorGUIUtils.DrawHeaderWithFoldout(position, label, property.isExpanded, noBoldOrIndent: true))
 					property.isExpanded = !property.isExpanded;
 			}
 
@@ -175,7 +175,7 @@ namespace Vertx.Editor {
 
 			originalPosition.yMin = position.yMax;
 			originalPosition.xMin += 10;
-			EditorGUIExtensions.DrawOutline(originalPosition, 1);
+			EditorGUIUtils.DrawOutline(originalPosition, 1);
 
 			position.xMin += 15; //Indent
 			position.xMax -= 4;

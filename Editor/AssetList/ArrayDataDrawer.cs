@@ -13,13 +13,41 @@ namespace Vertx.Editor
 {
 	public static class ArrayDataDrawer
 	{
+		private const string
+			arrayKeyTooltip = "Find a Serialized Property to use as a key into the above array property.",
+			drawingPropertyTooltip = "Find a Serialized Property to draw if the key's query has passed.";
+		
 		private static readonly GUIContent
-			addArrayKeyLabel = new GUIContent("Add Key", "Find a Serialized Property to use as a key into the above array property."),
-			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", "Find a Serialized Property to draw if the key's query has passed."),
-			queryLabel = new GUIContent("Query", "A Regex query on the value as a string");
-
-		public static void OnGUI(ref Rect rect, SerializedProperty propertyPath, SerializedProperty arrayProperty, Object referenceObject, HashSet<string> typeStrings)
+			addArrayKeyLabel = new GUIContent("Add Key", arrayKeyTooltip),
+			modifyArrayKeyLabel = new GUIContent("Modify Key", arrayKeyTooltip),
+			addDrawingPropertyLabel = new GUIContent("Add Drawing Property", drawingPropertyTooltip),
+			modifyDrawingPropertyLabel = new GUIContent("Modify Drawing Property", drawingPropertyTooltip),
+			queryLabel = new GUIContent("Query", "A Regex query on the value as a string"),
+			keyLabel = new GUIContent("Key"),
+			keyAndQueryLabel = new GUIContent("Key and Query");
+		
+		public static void OnGUI(
+			ref Rect rect,
+			SerializedProperty propertyPath,
+			SerializedProperty arrayProperty,
+			Object referenceObject,
+			HashSet<string> typeStrings,
+			float backgroundXMin,
+			float headerXOffset = 0
+		)
 		{
+			rect.NextGUIRect();
+			if (EditorGUIUtils.DrawHeaderWithFoldout(
+				rect,
+				new GUIContent("Array Property"),
+				propertyPath.isExpanded,
+				backgroundXMin: backgroundXMin,
+				headerXOffset: headerXOffset
+			))
+				propertyPath.isExpanded = !propertyPath.isExpanded;
+
+			if (!propertyPath.isExpanded) return;
+
 			SerializedProperty indexing = arrayProperty.FindPropertyRelative("ArrayIndexing");
 			rect.NextGUIRect();
 			EditorGUI.PropertyField(rect, indexing);
@@ -36,12 +64,14 @@ namespace Vertx.Editor
 					SerializedProperty key = arrayProperty.FindPropertyRelative("ArrayPropertyKey");
 					bool hasKey = !string.IsNullOrEmpty(key.stringValue);
 					rect.NextGUIRect();
-					GUI.Label(rect, hasKey ? "Key and Query" : "Key", EditorStyles.boldLabel);
+					rect.y += EditorGUIUtility.standardVerticalSpacing;
+					EditorGUI.LabelField(rect, hasKey ? keyAndQueryLabel : keyLabel, EditorGUIUtils.CenteredBoldLabel);
+
 					rect.NextGUIRect();
 					using (new EditorGUI.DisabledScope(true))
 						EditorGUI.PropertyField(rect, key, GUIContent.none);
 					rect.NextGUIRect();
-					if (GUI.Button(rect, addArrayKeyLabel))
+					if (GUI.Button(rect.GetIndentedRect(), hasKey ? modifyArrayKeyLabel : addArrayKeyLabel))
 					{
 						//retrieves properties under the first array index for the dropdown
 						DisplayArrayKeyPropertyDropdown(rect, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject);
@@ -72,13 +102,14 @@ namespace Vertx.Editor
 			void DrawDrawingProperty(ref Rect r)
 			{
 				r.NextGUIRect();
-				GUI.Label(r, "Property", EditorStyles.boldLabel);
+				r.y += EditorGUIUtility.standardVerticalSpacing;
+				EditorGUI.LabelField(r, "Property", EditorGUIUtils.CenteredBoldLabel);
 				r.NextGUIRect();
 				SerializedProperty arrayPropertyPath = arrayProperty.FindPropertyRelative("ArrayPropertyPath");
 				using (new EditorGUI.DisabledScope(true))
 					EditorGUI.PropertyField(r, arrayPropertyPath);
 				r.NextGUIRect();
-				if (GUI.Button(r, addDrawingPropertyLabel))
+				if (GUI.Button(r.GetIndentedRect(), string.IsNullOrEmpty(arrayPropertyPath.stringValue) ? addDrawingPropertyLabel : modifyDrawingPropertyLabel))
 					DisplayArrayDrawingPropertyDropdown(r, $"{propertyPath.stringValue}.Array.data[0]", arrayProperty, referenceObject, typeStrings);
 			}
 		}

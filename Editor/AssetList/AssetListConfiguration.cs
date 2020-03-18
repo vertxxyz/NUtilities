@@ -19,12 +19,35 @@ namespace Vertx.Editor
 		ByIndex
 	}
 
+	internal enum MissingPropertyDisplay
+	{
+		RedWithWarning,
+		Blank
+	}
+
+	[Flags]
+	internal enum AdditionalColumns
+	{
+		None = 0,
+		Path = 1
+	}
+
 	internal class AssetListConfiguration : ScriptableObject
 	{
 		[SerializeField]
 		private AssetType assetType = AssetType.InSceneAndAssets;
 
 		public AssetType AssetContext => assetType;
+
+		[SerializeField]
+		private MissingPropertyDisplay missingPropertyDisplay;
+
+		public MissingPropertyDisplay MissingPropertyDisplay => missingPropertyDisplay;
+
+		[SerializeField, EnumFlags]
+		private AdditionalColumns additionalColumns;
+
+		public AdditionalColumns AdditionalColumns => additionalColumns;
 
 		[Serializable]
 		internal class ColumnConfiguration

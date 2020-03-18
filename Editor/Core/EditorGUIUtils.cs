@@ -6,7 +6,7 @@ using UnityEditor;
 
 namespace Vertx.Extensions
 {
-	public static class EditorGUIExtensions
+	public static class EditorGUIUtils
 	{
 		#region Exponential Slider
 
@@ -131,7 +131,12 @@ namespace Vertx.Extensions
 
 		#region Header
 
-		public static bool DrawHeader(GUIContent label, SerializedProperty activeField = null, float widthCutoff = 0, bool noBoldOrIndent = false)
+		public static bool DrawHeader(
+			GUIContent label,
+			SerializedProperty activeField = null,
+			float widthCutoff = 0,
+			bool noBoldOrIndent = false
+		)
 		{
 			bool ret;
 			if (activeField != null)
@@ -144,32 +149,55 @@ namespace Vertx.Extensions
 			}
 			else
 			{
-				bool v = true; //Can't wait for c# 7
+				bool v = true;
 				ret = DrawHeader(label, ref v, true, widthCutoff, noBoldOrIndent);
 			}
 
 			return ret;
 		}
 
-		public static bool DrawHeader(GUIContent label, ref bool active, bool hideToggle = false, float widthCutoff = 0, bool noBoldOrIndent = false)
+		public static bool DrawHeader(
+			GUIContent label,
+			ref bool active,
+			bool hideToggle = false,
+			float widthCutoff = 0,
+			bool noBoldOrIndent = false,
+			float headerXOffset = 0
+		)
 		{
 			Rect r = GUILayoutUtility.GetRect(1, 17);
-			return DrawHeader(r, label, ref active, hideToggle, widthCutoff, noBoldOrIndent);
+			return DrawHeader(r,
+				label,
+				ref active,
+				hideToggle,
+				widthCutoff,
+				noBoldOrIndent,
+				headerXOffset: headerXOffset
+			);
 		}
 
-		public static bool DrawHeader(Rect contentRect, GUIContent label, ref bool active, bool hideToggle = false, float widthCutoff = 0, bool noBoldOrIndent = false)
+		public static bool DrawHeader(Rect contentRect,
+			GUIContent label,
+			ref bool active,
+			bool hideToggle = false,
+			float widthCutoff = 0,
+			bool noBoldOrIndent = false,
+			float backgroundXMin = 0,
+			float headerXOffset = 0)
 		{
 			Rect labelRect = contentRect;
 			if (!noBoldOrIndent)
 				labelRect.xMin += 16f;
+			labelRect.xMin += headerXOffset;
 			labelRect.xMax -= 20f;
 			Rect toggleRect = contentRect;
 			if (!noBoldOrIndent)
 				toggleRect.xMin = EditorGUI.indentLevel * 15;
+			toggleRect.xMin += headerXOffset;
 			toggleRect.y += 2f;
 			toggleRect.width = 13f;
 			toggleRect.height = 13f;
-			contentRect.xMin = 0.0f;
+			contentRect.xMin = backgroundXMin;
 			EditorGUI.DrawRect(contentRect, HeaderColor);
 			using (new EditorGUI.DisabledScope(!active))
 				EditorGUI.LabelField(labelRect, label, noBoldOrIndent ? EditorStyles.label : EditorStyles.boldLabel);
@@ -193,21 +221,33 @@ namespace Vertx.Extensions
 			return true;
 		}
 
-		public static bool DrawHeaderWithFoldout(GUIContent label, bool expanded, float widthCutoff = 0, bool opensOnDragUpdated = false)
+		public static bool DrawHeaderWithFoldout(
+			GUIContent label,
+			bool expanded,
+			float widthCutoff = 0,
+			bool opensOnDragUpdated = false,
+			float headerXOffset = 0
+		)
 		{
 			bool v = true;
-			bool ret = DrawHeader(label, ref v, true, widthCutoff);
-			if (Foldout(GUILayoutUtility.GetLastRect(), expanded, opensOnDragUpdated))
+			bool ret = DrawHeader(label, ref v, true, widthCutoff, headerXOffset: headerXOffset);
+			Rect foldoutRect = GUILayoutUtility.GetLastRect();
+			foldoutRect.xMin += headerXOffset;
+			if (Foldout(foldoutRect, expanded, opensOnDragUpdated))
 				return true;
 			return ret;
 		}
 
-		private static bool Foldout(Rect r, bool expanded, bool noBoldOrIndent = false)
+		private static bool Foldout(
+			Rect r,
+			bool expanded,
+			bool opensOnDragUpdated = false
+		)
 		{
 			switch (Event.current.type)
 			{
 				case EventType.DragUpdated:
-					if (!expanded)
+					if (opensOnDragUpdated && !expanded)
 					{
 						if (r.Contains(Event.current.mousePosition))
 						{
@@ -220,10 +260,7 @@ namespace Vertx.Extensions
 				case EventType.Repaint:
 					//Only draw the Foldout - don't use it as a button or get focus
 					r.x += 3;
-					if (!noBoldOrIndent)
-						r.x += EditorGUI.indentLevel * 15;
-					else
-						r.xMin -= 16;
+					r.x += EditorGUI.indentLevel * 15;
 					r.y += 1f;
 					EditorStyles.foldout.Draw(r, GUIContent.none, -1, expanded);
 					break;
@@ -232,20 +269,43 @@ namespace Vertx.Extensions
 			return false;
 		}
 
-		public static bool DrawHeaderWithFoldout(Rect rect, GUIContent label, bool expanded,
-			float widthCutoff = 0, bool noBoldOrIndent = false)
+		public static bool DrawHeaderWithFoldout(
+			Rect rect,
+			GUIContent label,
+			bool expanded,
+			float widthCutoff = 0,
+			bool noBoldOrIndent = false,
+			float backgroundXMin = 0,
+			float headerXOffset = 0
+		)
 		{
 			bool v = true; //Can't wait for c# 7
-			bool ret = DrawHeader(rect, label, ref v, true, widthCutoff, noBoldOrIndent);
-			if (Foldout(rect, expanded, noBoldOrIndent))
+			bool ret = DrawHeader(
+				rect,
+				label,
+				ref v,
+				true,
+				widthCutoff: widthCutoff,
+				noBoldOrIndent: noBoldOrIndent,
+				backgroundXMin: backgroundXMin,
+				headerXOffset: headerXOffset
+			);
+			rect.Indent(headerXOffset);
+			if (noBoldOrIndent)
+				rect.xMin -= 16;
+			if (Foldout(rect, expanded))
 				return true;
 			return ret;
 		}
 
-		public static void DrawSplitter(bool inverse = false)
+		public static void DrawSplitter(
+			bool inverse = false,
+			bool alignXMinToZero = true
+		)
 		{
 			Rect rect = GUILayoutUtility.GetRect(1f, 1f);
-			rect.xMin = 0.0f;
+			if (alignXMinToZero)
+				rect.xMin = 0.0f;
 			if (Event.current.type != EventType.Repaint)
 				return;
 			Color c = inverse ? InverseSplitterColor : SplitterColor;
@@ -265,16 +325,18 @@ namespace Vertx.Extensions
 		#endregion
 
 		#region Outline
+
 		public class OutlineScope : IDisposable
 		{
 			private readonly EditorGUILayout.VerticalScope scope;
 
 			private static GUIStyle _smallMargins;
+
 			private static GUIStyle SmallMargins => _smallMargins ?? (_smallMargins = new GUIStyle(EditorStyles.inspectorDefaultMargins)
 			{
 				padding = new RectOffset(4, 4, 2, 2),
 			});
-			
+
 			public OutlineScope(bool drawBackground = true, bool largeMargins = true)
 			{
 				GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
@@ -300,14 +362,15 @@ namespace Vertx.Extensions
 				scope.Dispose();
 			}
 		}
-		
+
 		private static GUIStyle _headerBackground;
 		private static GUIStyle HeaderBackground => _headerBackground ?? (_headerBackground = "RL Header");
-		
+
 		private static GUIStyle _boxBackground;
 		private static GUIStyle BoxBackground => _boxBackground ?? (_boxBackground = "RL Background");
-		
+
 		private static GUIStyle _smallPadding;
+
 		private static GUIStyle SmallPadding => _smallPadding ?? (_smallPadding = new GUIStyle
 		{
 			padding = new RectOffset(6, 4, 2, 4)
@@ -325,27 +388,30 @@ namespace Vertx.Extensions
 		public class ContainerScope : IDisposable
 		{
 			private readonly int bottomMargin;
+			private readonly int bottomPadding;
 			private readonly EditorGUILayout.VerticalScope scope;
 
-			public ContainerScope(GUIContent headerLabel, int bottomMargin = 8)
+			public ContainerScope(GUIContent headerLabel, int bottomMargin = 8, int bottomPadding = 5)
 			{
 				this.bottomMargin = bottomMargin;
+				this.bottomPadding = bottomPadding;
 				DrawHeaderWithBackground(headerLabel);
 				scope = new EditorGUILayout.VerticalScope(SmallPadding);
 				Rect rect = scope.rect;
 				rect.yMin -= 2;
-				
+
 				if (Event.current.type == EventType.Repaint)
 					BoxBackground.Draw(rect, GUIContent.none, 0);
 			}
 
 			public void Dispose()
 			{
+				GUILayout.Space(bottomPadding);
 				scope.Dispose();
 				GUILayout.Space(bottomMargin);
 			}
 		}
-		
+
 		public static void DrawOutline(Rect rect, float size)
 		{
 			if (Event.current.type != EventType.Repaint)
@@ -370,8 +436,40 @@ namespace Vertx.Extensions
 
 		public static void NextGUIRect(this ref Rect rect) => rect.y = rect.yMax + EditorGUIUtility.standardVerticalSpacing;
 
+		public static void Indent(this ref Rect rect) => rect = EditorGUI.IndentedRect(rect);
 		public static void Indent(this ref Rect rect, float amount) => rect.xMin += amount;
+
+		public static Rect GetIndentedRect(this ref Rect rect) => EditorGUI.IndentedRect(rect);
+
+		public static Rect GetIndentedRect(this ref Rect rect, float amount)
+		{
+			Rect r = rect;
+			r.Indent(amount);
+			return r;
+		}
+
 		#endregion
+
+		private static GUIStyle centeredMiniLabel;
+
+		public static GUIStyle CenteredMiniLabel => centeredMiniLabel ?? (centeredMiniLabel = new GUIStyle(EditorStyles.miniLabel)
+		{
+			alignment = TextAnchor.MiddleCenter
+		});
+
+		private static GUIStyle centeredBoldMiniLabel;
+
+		public static GUIStyle CenteredBoldMiniLabel => centeredBoldMiniLabel ?? (centeredBoldMiniLabel = new GUIStyle(EditorStyles.miniBoldLabel)
+		{
+			alignment = TextAnchor.MiddleCenter
+		});
+
+		private static GUIStyle centeredBoldLabel;
+
+		public static GUIStyle CenteredBoldLabel => centeredBoldLabel ?? (centeredBoldLabel = new GUIStyle(EditorStyles.boldLabel)
+		{
+			alignment = TextAnchor.MiddleCenter
+		});
 
 		public static float HeightWithSpacing => EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
 	}

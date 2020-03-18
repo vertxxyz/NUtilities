@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using UnityEngine;
 using NUnit.Framework;
 using UnityEditor;
@@ -9,10 +8,24 @@ using Object = UnityEngine.Object;
 
 namespace Vertx.Testing.Editor
 {
-	public class ObjectReferenceTests
+	public abstract class ReferenceTests
 	{
-		[Test]
-		public void CheckForMissingReferencesInBuildScenes()
+		private SceneSetup[] sceneManagerSetup;
+
+		[SetUp]
+		public void SetUp() => sceneManagerSetup = EditorSceneManager.GetSceneManagerSetup();
+
+		[TearDown]
+		public void TearDown()
+		{
+			EditorUtility.ClearProgressBar();
+			if (sceneManagerSetup != null && sceneManagerSetup.Length > 0)
+				EditorSceneManager.RestoreSceneManagerSetup(sceneManagerSetup);
+		}
+		
+		private static readonly Type transformType = typeof(Transform);
+
+		protected static void RunFunctionOnSceneObjects(Action<Component> componentAction)
 		{
 			int buildSceneCount = SceneManager.sceneCountInBuildSettings;
 			for (int buildIndex = 0; buildIndex < buildSceneCount; buildIndex++)
@@ -30,13 +43,25 @@ namespace Vertx.Testing.Editor
 				{
 					EditorUtility.DisplayProgressBar(checkingLabel, path, i / progressTotal);
 					GameObject rootGameObject = rootGameObjects[i];
-					CheckForMissingReferencesUnderRootGameObject(rootGameObject);
+					CheckForMissingReferencesUnderRootGameObject(rootGameObject, componentAction);
 				}
 			}
 		}
 		
-		[Test]
-		public void CheckForMissingReferencesInAssets()
+		protected static void CheckForMissingReferencesUnderRootGameObject(GameObject gameObject, Action<Component> componentAction)
+		{
+			Component[] components = gameObject.GetComponentsInChildren<Component>();
+			foreach (Component component in components)
+			{
+				//Skip transforms
+				if(component.GetType() == transformType)
+					continue;
+
+				componentAction(component);
+			}
+		}
+
+		protected static void RunFunctionOnAssets(Action<GameObject> prefabAction, Action<ScriptableObject> scriptableObjectAction)
 		{
 			string[] guids = AssetDatabase.FindAssets($"t:{nameof(GameObject)}");
 			string[] guidsSO = AssetDatabase.FindAssets($"t:{nameof(ScriptableObject)}");
@@ -50,7 +75,7 @@ namespace Vertx.Testing.Editor
 				if(!IsValidPath(path)) continue;
 				EditorUtility.DisplayProgressBar("Checking Prefab Assets for missing references.", path, i / progressTotal);
 				GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-				CheckForMissingReferencesUnderRootGameObject(prefab);
+				prefabAction(prefab);
 			}
 			
 			progressTotal = lengthSO - 1;
@@ -62,7 +87,7 @@ namespace Vertx.Testing.Editor
 				EditorUtility.DisplayProgressBar("Checking ScriptableObject Assets for missing references.", path, i / progressTotal);
 				ScriptableObject scriptableObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
 				if(scriptableObject == null) continue; //This can occur if an asset has been created but the type is not compiled for the version.
-				CheckForMissingReferencesOnObject(scriptableObject);
+				scriptableObjectAction(scriptableObject);
 			}
 
 
@@ -85,34 +110,35 @@ namespace Vertx.Testing.Editor
 			}
 		}
 
-		private SceneSetup[] sceneManagerSetup;
-
-		[SetUp]
-		public void SetUp() => sceneManagerSetup = EditorSceneManager.GetSceneManagerSetup();
-
-		[TearDown]
-		public void TearDown()
+		protected static string GetPathForObject(Object @object)
 		{
-			EditorUtility.ClearProgressBar();
-			if (sceneManagerSetup != null && sceneManagerSetup.Length > 0)
-				EditorSceneManager.RestoreSceneManagerSetup(sceneManagerSetup);
-		}
-
-		private static readonly Type transformType = typeof(Transform);
-
-		public static void CheckForMissingReferencesUnderRootGameObject(GameObject gameObject)
-		{
-			Component[] components = gameObject.GetComponentsInChildren<Component>();
-			foreach (Component component in components)
+			string path = EditorUtility.IsPersistent(@object) ? $"{AssetDatabase.GetAssetPath(@object)}/" : string.Empty;
+			if (@object is Component component)
 			{
-				//Skip transforms
-				if(component.GetType() == transformType)
-					continue;
-
-				CheckForMissingReferencesOnObject(component);
+				Transform transform = component.transform;
+				string tPath = AnimationUtility.CalculateTransformPath(transform, null);
+				var scene = component.gameObject.scene;
+				if(scene.IsValid())
+					path += $"({scene.path}) ";
+				path += string.IsNullOrEmpty(tPath) ? component.ToString() : $"{tPath}/{component}";
 			}
+			else
+				path += @object.ToString();
+
+			return path;
 		}
-		
+	}
+	
+	public class ObjectReferenceTests : ReferenceTests
+	{
+		[Test]
+		public void CheckForMissingReferencesInBuildScenes()
+			=> RunFunctionOnSceneObjects(CheckForMissingReferencesOnObject);
+
+		[Test]
+		public void CheckForMissingReferencesInAssets()
+			=> RunFunctionOnAssets(CheckForMissingReferencesOnObject, CheckForMissingReferencesOnObject);
+
 		public static void CheckForMissingReferencesOnObject (Object @object)
 		{
 			SerializedObject serializedObject = new SerializedObject(@object);
@@ -123,15 +149,7 @@ namespace Vertx.Testing.Editor
 					continue;
 				if (property.objectReferenceValue != null || property.objectReferenceInstanceIDValue == 0)
 					continue;
-				string path = EditorUtility.IsPersistent(@object) ? $"{AssetDatabase.GetAssetPath(@object)}/" : string.Empty;
-				if (@object is Component component)
-				{
-					Transform transform = component.transform;
-					string tPath = AnimationUtility.CalculateTransformPath(transform, transform.root);
-					path += string.IsNullOrEmpty(tPath) ? component.ToString() : $"{tPath}/{component}";
-				}
-				else
-					path += @object.ToString();
+				string path = GetPathForObject(@object);
 
 				Assert.Fail($"{path}.{property.propertyPath}\nWas found to be missing.");	
 			}

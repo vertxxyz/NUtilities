@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
@@ -100,8 +101,9 @@ namespace Vertx.Editor
 
 			bool changedConfiguration = this.configuration != configuration;
 			this.configuration = configuration;
-			titleContent = new GUIContent(configuration.name);
 			objects = AssetListUtility.LoadAssetsByTypeName(configuration.TypeString, out type, out isComponent, configuration.AssetContext);
+			GUIContent objectContent = EditorGUIUtility.ObjectContent(null, type);
+			titleContent = new GUIContent(configuration.name, objectContent.image);
 
 			if (treeViewState == null)
 				treeViewState = new TreeViewState();
@@ -130,8 +132,65 @@ namespace Vertx.Editor
 				toolbarSearchField.SetValueWithoutNotify(treeView.searchString);
 			toolbarSearchField.RegisterValueChangedCallback(evt => treeView.searchString = evt.newValue);
 
+			var toolbarMenu = rootVisualElement.Q<ToolbarMenu>("ExportMenu");
+			toolbarMenu.menu.AppendAction("TSV", action => ExportToTSV());
+
 			assetListContainer = rootVisualElement.Q<IMGUIContainer>("AssetList");
 			assetListContainer.onGUIHandler = MultiColumnListGUI;
+		}
+
+		private void ExportToTSV()
+		{
+			StringBuilder sB = new StringBuilder();
+
+			void Append(object value)
+			{
+				sB.Append(value);
+				sB.Append('\t');
+			}
+
+			//Append all the headers
+			var columns = GetColumnsFromConfiguration(configuration);
+			foreach (var column in columns)
+				Append(column.headerContent.text);
+			sB.Append('\n');
+
+
+			var orderedItems = objects.OrderBy(i => i.name);
+			foreach (var t in orderedItems)
+			{
+				using (SerializedObject sO = new SerializedObject(t))
+				{
+					foreach (ColumnContext context in columnContexts)
+					{
+						switch (context.TryGetValue(sO, out SerializedProperty property, out object alternateValue))
+						{
+							case ColumnContext.PropertyOverride.None:
+								if (property != null)
+									sB.Append(AssetListUtility.GetString(
+										property,
+										configuration,
+										configuration.Columns[context.ConfigColumnIndex]
+									));
+								break;
+							case ColumnContext.PropertyOverride.Name:
+								sB.Append(AssetListUtility.GetString((string) alternateValue, configuration.NameDisplay));
+								break;
+							case ColumnContext.PropertyOverride.Path:
+								sB.Append((string)alternateValue);
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+
+						sB.Append('\t');
+					}
+				}
+
+				sB.Append('\n');
+			}
+
+			CodeUtils.SaveAndWriteFileDialog(configuration.name, sB.ToString(), "tsv");
 		}
 
 		private MultiColumnHeaderState.Column[] GetColumnsFromConfiguration(AssetListConfiguration configuration)
@@ -144,22 +203,37 @@ namespace Vertx.Editor
 					allowToggleVisibility = false,
 					autoResize = true,
 					headerTextAlignment = TextAlignment.Center,
-					sortingArrowAlignment = TextAlignment.Left
+					sortingArrowAlignment = TextAlignment.Left,
+					minWidth = 30
 				}
 			};
-
 
 			List<ColumnContext> contexts = new List<ColumnContext>
 			{
 				new ColumnContext(configuration, configuration.NameDisplay, this)
 			};
 
+			if ((configuration.AdditionalColumns & AdditionalColumns.Path) != 0)
+			{
+				columns.Add(new MultiColumnHeaderState.Column
+				{
+					headerContent = new GUIContent("Path"),
+					allowToggleVisibility = true,
+					autoResize = true,
+					headerTextAlignment = TextAlignment.Center,
+					sortingArrowAlignment = TextAlignment.Left,
+					minWidth = 30
+				});
+				contexts.Add(new ColumnContext(configuration, this));
+			}
+
 			if (configuration.Columns != null)
 			{
-				foreach (AssetListConfiguration.ColumnConfiguration c in configuration.Columns)
+				for (var i = 0; i < configuration.Columns.Length; i++)
 				{
+					AssetListConfiguration.ColumnConfiguration c = configuration.Columns[i];
 					var columnTitleContent = new GUIContent(c.Title);
-					contexts.Add(new ColumnContext(c));
+					contexts.Add(new ColumnContext(c, i));
 
 					columns.Add(new MultiColumnHeaderState.Column
 					{
@@ -291,13 +365,13 @@ namespace Vertx.Editor
 				for (int i = 0; i < args.GetNumVisibleColumns(); ++i)
 				{
 					Rect cellRect = args.GetCellRect(i);
-					CellGUI(cellRect, serializedObject, args.GetColumn(i), ref args);
+					CellGUI(cellRect, serializedObject, args.GetColumn(i));
 				}
 
 				GUI.color = Color.white;
 			}
 
-			private void CellGUI(Rect cellRect, SerializedObject serializedObject, int columnIndex, ref RowGUIArgs args)
+			private void CellGUI(Rect cellRect, SerializedObject serializedObject, int columnIndex)
 			{
 				ColumnContext columnContext = window.columnContexts[columnIndex];
 				if (columnContext == null)
@@ -306,15 +380,27 @@ namespace Vertx.Editor
 					return;
 				}
 
-				SerializedProperty property = columnContext.GetValue(serializedObject);
-				if (property == null)
+				if (columnContext.TryGetValue(serializedObject, out SerializedProperty property, out _) == ColumnContext.PropertyOverride.None)
 				{
-					EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
-					GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
-					return;
+					if (property == null)
+					{
+						switch (window.configuration.MissingPropertyDisplay)
+						{
+							case MissingPropertyDisplay.RedWithWarning:
+								EditorGUI.DrawRect(cellRect, new Color(1f, 0f, 0f, 0.15f));
+								GUI.Label(cellRect, missingPropertyLabel, CenteredMiniLabel);
+								break;
+							case MissingPropertyDisplay.Blank:
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+
+						return;
+					}
 				}
 
-				columnContext.OnGUI(cellRect, property);
+				columnContext.OnGUI(cellRect, serializedObject, property);
 			}
 
 

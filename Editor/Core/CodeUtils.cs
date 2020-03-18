@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Vertx.Extensions
 {
-	public static class CodeUtility
+	public static class CodeUtils
 	{
 		public static bool GetAndReplaceTextAtFilePath(string templatePath, Dictionary<string, string> mapping, out string text)
 		{

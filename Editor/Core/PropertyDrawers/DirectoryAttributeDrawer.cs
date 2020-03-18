@@ -43,7 +43,7 @@ namespace Vertx.Editor
 			}
 			else
 			{
-				if (!EditorGUIExtensions.ButtonOverPreviousControl()) return sP.stringValue;
+				if (!EditorGUIUtils.ButtonOverPreviousControl()) return sP.stringValue;
 			}
 
 			string newDirectory = EditorUtility.OpenFolderPanel("Choose Directory", path, path.Equals("Assets") ? string.Empty : path);

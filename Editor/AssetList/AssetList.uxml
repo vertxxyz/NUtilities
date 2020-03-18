@@ -2,6 +2,7 @@
     <uie:Toolbar>
         <ui:VisualElement class="toolbarRightAlign">
             <uie:ToolbarSearchField name="SearchField" class="searchField"/>
+            <uie:ToolbarMenu name="ExportMenu" text="Export"/>
         </ui:VisualElement>
     </uie:Toolbar>
     <ui:IMGUIContainer name="AssetList" class="assetList" />

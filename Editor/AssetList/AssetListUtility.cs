@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -170,10 +173,8 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Boolean:
 					return property.boolValue.ToString();
 				case SerializedPropertyType.Float:
-					return property.floatValue.ToString();
+					return property.floatValue.ToString(CultureInfo.InvariantCulture);
 				case SerializedPropertyType.String:
-					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
-						return property.serializedObject.targetObject.name;
 					return property.stringValue;
 				case SerializedPropertyType.ObjectReference:
 					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
@@ -212,14 +213,167 @@ namespace Vertx.Editor
 					return property.boundsIntValue.ToString();
 				case SerializedPropertyType.ExposedReference:
 					return property.exposedReferenceValue.name;
-				case SerializedPropertyType.AnimationCurve:
+				case SerializedPropertyType.Gradient:
 				#if UNITY_2019_3_OR_NEWER
 				case SerializedPropertyType.ManagedReference:
 				#endif
-				case SerializedPropertyType.Gradient:
 				case SerializedPropertyType.Generic:
 				default:
 					throw new ArgumentOutOfRangeException($"{property.propertyType} is not supported by {nameof(GetValueForRegex)}");
+			}
+		}
+
+		public static string GetString(float floatValue, NumericalPropertyDisplay numericalDisplay)
+		{
+			switch (numericalDisplay)
+			{
+				case NumericalPropertyDisplay.Property:
+				case NumericalPropertyDisplay.ReadonlyProperty:
+				case NumericalPropertyDisplay.ReadonlyLabel:
+					return floatValue.ToString();
+				case NumericalPropertyDisplay.ReadonlyProgressBar:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
+					return $"{floatValue:##0.##}%";
+				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
+					return $"{floatValue * 100:##0.##}%";
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(int intValue, NumericalPropertyDisplay numericalDisplay)
+		{
+			switch (numericalDisplay)
+			{
+				case NumericalPropertyDisplay.Property:
+				case NumericalPropertyDisplay.ReadonlyProperty:
+				case NumericalPropertyDisplay.ReadonlyLabel:
+					return intValue.ToString();
+				case NumericalPropertyDisplay.ReadonlyProgressBar:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabel:
+					return $"{intValue:##0.##}%";
+				case NumericalPropertyDisplay.ReadonlyProgressBarNormalised:
+				case NumericalPropertyDisplay.ReadonlyPercentageLabelNormalised:
+					return $"{intValue * 100:##0.##}%";
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(string stringValue, StringPropertyDisplay stringDisplay)
+		{
+			switch (stringDisplay)
+			{
+				case StringPropertyDisplay.Property:
+				case StringPropertyDisplay.ReadonlyProperty:
+				case StringPropertyDisplay.ReadonlyLabel:
+				case StringPropertyDisplay.ReadonlyCenteredLabel:
+					return stringValue;
+				case StringPropertyDisplay.ReadonlyNicifiedLabel:
+				case StringPropertyDisplay.ReadonlyNicifiedCenteredLabel:
+					return ObjectNames.NicifyVariableName(stringValue);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(string stringValue, NamePropertyDisplay nameDisplay)
+		{
+			switch (nameDisplay)
+			{
+				case NamePropertyDisplay.Label:
+				case NamePropertyDisplay.CenteredLabel:
+					return stringValue;
+				case NamePropertyDisplay.NicifiedCenteredLabel:
+				case NamePropertyDisplay.NicifiedLabel:
+					return ObjectNames.NicifyVariableName(stringValue);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
+		public static string GetString(SerializedProperty property, AssetListConfiguration configuration, AssetListConfiguration.ColumnConfiguration columnConfig)
+		{
+			switch (property.propertyType)
+			{
+				case SerializedPropertyType.Float:
+					return GetString(property.floatValue, columnConfig.NumericalDisplay);
+				case SerializedPropertyType.Integer:
+					return GetString(property.intValue, columnConfig.NumericalDisplay);
+				case SerializedPropertyType.Boolean:
+					return property.boolValue.ToString();
+				case SerializedPropertyType.String:
+					return GetString(property.stringValue, columnConfig.StringDisplay);
+				case SerializedPropertyType.ObjectReference:
+					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
+				case SerializedPropertyType.LayerMask:
+					return property.enumDisplayNames[property.intValue];
+				case SerializedPropertyType.Enum:
+					return property.enumDisplayNames[property.intValue];
+				case SerializedPropertyType.ArraySize:
+					return property.arraySize.ToString();
+				case SerializedPropertyType.Character:
+					return property.stringValue;
+				case SerializedPropertyType.Color:
+					return property.colorValue.ToString();
+				case SerializedPropertyType.Vector2:
+					return property.vector2Value.ToString();
+				case SerializedPropertyType.Vector3:
+					return property.vector3Value.ToString();
+				case SerializedPropertyType.Vector4:
+					return property.vector4Value.ToString();
+				case SerializedPropertyType.Quaternion:
+					return property.quaternionValue.eulerAngles.ToString();
+				case SerializedPropertyType.FixedBufferSize:
+					return property.fixedBufferSize.ToString();
+				case SerializedPropertyType.Vector2Int:
+					return property.vector2IntValue.ToString();
+				case SerializedPropertyType.Vector3Int:
+					return property.vector3IntValue.ToString();
+				case SerializedPropertyType.Rect:
+					return property.rectValue.ToString();
+				case SerializedPropertyType.RectInt:
+					return property.rectIntValue.ToString();
+				case SerializedPropertyType.Bounds:
+					return property.boundsValue.ToString();
+				case SerializedPropertyType.BoundsInt:
+					return property.boundsIntValue.ToString();
+				case SerializedPropertyType.ExposedReference:
+					return property.exposedReferenceValue.name;
+				case SerializedPropertyType.Gradient:
+					Gradient gradient = GetGradientValue(property);
+					if (gradient == null) return string.Empty;
+					StringBuilder sB = new StringBuilder(20);
+					string asciiGradient = " .:-=+*#%@";
+					int gradientMultiplier = asciiGradient.Length - 1;
+					for (int i = 0; i < 20; i++)
+					{
+						float grayscale = 1 - gradient.Evaluate(i / 19f).grayscale;
+						sB.Append(asciiGradient[Mathf.Clamp(Mathf.RoundToInt(grayscale * gradientMultiplier), 0, gradientMultiplier)]);
+					}
+					return sB.ToString();
+				case SerializedPropertyType.AnimationCurve:
+					return property.animationCurveValue.ToString();
+				#if UNITY_2019_3_OR_NEWER
+				case SerializedPropertyType.ManagedReference:
+				#endif
+				case SerializedPropertyType.Generic:
+				default:
+					throw new ArgumentOutOfRangeException($"{property.propertyType} is not supported by {nameof(GetString)}");
+			}
+
+			Gradient GetGradientValue(SerializedProperty sp)
+			{
+				PropertyInfo propertyInfo = typeof(SerializedProperty).GetProperty(
+					"gradientValue",
+					BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+					null,
+					typeof(Gradient),
+					Array.Empty<Type>(),
+					null
+				);
+				return propertyInfo?.GetValue(sp, null) as Gradient;
 			}
 		}
 
@@ -234,8 +388,6 @@ namespace Vertx.Editor
 				case SerializedPropertyType.Float:
 					return property.floatValue;
 				case SerializedPropertyType.String:
-					if (property.stringValue == string.Empty && property.propertyPath == "m_Name")
-						return property.serializedObject.targetObject.name;
 					return property.stringValue;
 				case SerializedPropertyType.ObjectReference:
 					return property.objectReferenceValue == null ? string.Empty : property.objectReferenceValue.name;
@@ -451,6 +603,35 @@ namespace Vertx.Editor
 					return true;
 				default:
 					return false;
+			}
+		}
+
+		public static string GetPathForObject(Object @object)
+		{
+			if (EditorUtility.IsPersistent(@object))
+			{
+				//Asset
+				return AssetDatabase.GetAssetPath(@object);
+			}
+			//In-Scene
+			if (TryGetTransform(out var t))
+				return AnimationUtility.CalculateTransformPath(t, null);
+			Debug.LogError($"{@object} is in scene but {nameof(TryGetTransform)} failed.");
+			return string.Empty;
+
+			bool TryGetTransform(out Transform transform)
+			{
+				switch (@object)
+				{
+					case Component component:
+						transform = component.transform;
+						return true;
+					case GameObject gameObject:
+						transform = gameObject.transform;
+						return true;
+				}
+				transform = null;
+				return false;
 			}
 		}
 	}

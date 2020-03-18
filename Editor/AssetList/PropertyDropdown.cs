@@ -17,7 +17,8 @@ namespace Vertx.Editor
 		{
 			Type = property.propertyType;
 			IsArray = property.isArray;
-			IsInConfiguration = configuration.Columns.Any(c => c.PropertyPath.Equals(property.propertyPath));
+			IsInConfiguration = configuration.Columns != null &&
+			                    configuration.Columns.Any(c => c.PropertyPath.Equals(property.propertyPath));
 		}
 	}
 

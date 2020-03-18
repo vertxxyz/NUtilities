@@ -4,6 +4,20 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+ - Unified all utility classes to use the Utils suffix
+ - Asset List
+ 	- TSV Export
+ 	- Optional Path column
+ 	- General fixes and improvements
+ - Action Window
+ 	- Material cleanup, removes unused properties from materials.
+ 	- Trim GameObject Names Of Duplicate Indices (removes the (1) from duplicated gameobjects)
+ - ScriptableObjectInspector
+ 	- Search optionally includes inherited types
+ - Tests
+ 	- ObjectReferenceTests now includes the scene in the log
+
 ## [1.1.0]
  - Added Asset List, a window utility for managing and creating lists of asset types.
  - Added UXML support to DragAndDropBox
