@@ -6,7 +6,8 @@ using UnityEditor;
 using UnityEngine;
 using Vertx.Extensions;
 
-namespace Vertx.Editor {
+namespace Vertx.Editor
+{
 	[CustomPropertyDrawer(typeof(EnumToValueBase), true)]
 	public class EnumToValueDrawer : PropertyDrawer
 	{
@@ -121,7 +122,7 @@ namespace Vertx.Editor {
 
 			tooltips = new GUIContent[valuesToNames.Count];
 			int j = 0;
-			foreach (KeyValuePair<int,string> valuesToName in valuesToNames)
+			foreach (KeyValuePair<int, string> valuesToName in valuesToNames)
 				tooltips[j++] = new GUIContent(string.Empty, valuesToName.Key.ToString());
 
 			List<float> heights = new List<float>();
@@ -192,14 +193,31 @@ namespace Vertx.Editor {
 				Rect contentRect = new Rect(contentX, position.y, contentWidth, position.height);
 				if (multiLine)
 				{
-					using (new EditorGUI.PropertyScope(new Rect(position.x, contentRect.y, position.width, contentRect.height), GUIContent.none, value))
+					Rect r = new Rect(position.x - 5, contentRect.y - 2, position.width + 8, contentRect.height + 2);
+					EditorGUI.DrawRect(r, EditorGUIUtils.HeaderColor);
+					
+					labelRect.xMin += 12;
+
+					using (new EditorGUI.PropertyScope(r, GUIContent.none, value))
 					{
 						GUI.enabled = false;
 						EditorGUI.Popup(labelRect, i, enumNames);
 						GUI.enabled = true;
 					}
+
 					EditorGUI.LabelField(labelRect, tooltips[i]);
+
+					//Foldout
+					value.isExpanded = EditorGUI.Foldout(new Rect(r.x + 15, r.y, r.width, r.height), value.isExpanded, GUIContent.none, true);
+
 					contentRect.y = labelRect.yMax + EditorGUIUtility.standardVerticalSpacing;
+					if (!value.isExpanded)
+					{
+						EditorGUI.DrawRect(new Rect(r.x, labelRect.yMax, r.width, 1), EditorGUIUtils.SplitterColor);
+						position.y = contentRect.y;
+						continue;
+					}
+
 					SerializedProperty end = value.GetEndProperty();
 					int index = 0;
 					bool enterChildren = true;
@@ -247,13 +265,25 @@ namespace Vertx.Editor {
 			if (!property.isExpanded)
 				return EditorGUIUtility.singleLineHeight;
 			if (!Initialise(property)) return 0;
+			int length = hidesFirstEnum ? enumNames.Length - 1 : enumNames.Length;
+			int expandedLength = length;
+			if (multiLine)
+			{
+				SerializedProperty values = property.FindPropertyRelative("values");
+				for (int i = hidesFirstEnum ? 1 : 0; i < enumNames.Length; i++)
+				{
+					SerializedProperty value = values.GetArrayElementAtIndex(i);
+					if (!value.isExpanded) expandedLength--;
+				}
+			}
+
 			return
 				//Heading
 				EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing +
 				//Multi-line skip enum heading
-				(multiLine ? (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * enumNames.Length : 0) +
+				(multiLine ? (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * length : 0) +
 				//Property height
-				totalPropertyHeight * (hidesFirstEnum ? enumNames.Length - 1 : enumNames.Length)
+				totalPropertyHeight * (multiLine ? expandedLength : length)
 				//Padding
 				+ EditorGUIUtility.standardVerticalSpacing * 2;
 		}
