@@ -168,7 +168,19 @@ namespace Vertx.Editor
 			using (new EditorGUI.PropertyScope(position, GUIContent.none, property))
 			{
 				if (EditorGUIUtils.DrawHeaderWithFoldout(position, label, property.isExpanded, noBoldOrIndent: true))
+				{
 					property.isExpanded = !property.isExpanded;
+					if (Event.current.alt)
+					{
+						var valuesToCollapseOrExpand = property.FindPropertyRelative("values");
+						for (int i = 0; i < valuesToCollapseOrExpand.arraySize; i++)
+						{
+							SerializedProperty value = valuesToCollapseOrExpand.GetArrayElementAtIndex(i);
+							value.isExpanded = property.isExpanded;
+						}
+						
+					}
+				}
 			}
 
 			if (!property.isExpanded)
