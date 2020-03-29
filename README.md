@@ -1,9 +1,6 @@
 # NUtilities
 A collection of various tools and utilities for Unity.
 
-## 🚨 WORK IN PROGRESS 🚨
-This is a platform for adding utilities to Unity as I see fit.
-
 ## Contents:
 ##### Utilities:
 - [Asset List](https://github.com/vertxxyz/NUtilities/wiki/Asset-List)
