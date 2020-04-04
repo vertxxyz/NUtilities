@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
@@ -139,6 +140,108 @@ namespace Vertx.Extensions
 
 		#region Property Extensions
 
+		public static void LogAllProperties(this SerializedObject serializedObject)
+		{
+			StringBuilder stringBuilder = new StringBuilder(serializedObject.targetObject.ToString());
+			stringBuilder.AppendLine(":");
+			SerializedProperty rootProp = serializedObject.GetIterator();
+
+			rootProp.Next(true);
+			AppendProperty(stringBuilder, rootProp, null);
+
+			Debug.Log(stringBuilder);
+		}
+
+		private const int safetySerializationDepth = 10;
+
+		private static void AppendProperty
+		(
+			StringBuilder stringBuilder,
+			SerializedProperty property,
+			SerializedProperty endProperty,
+			int substringPosition = 0,
+			int depth = 0)
+		{
+			property = property.Copy();
+			while (true)
+			{
+				if (depth > safetySerializationDepth) return;
+
+				bool enterChildren = true;
+				if (property.isArray)
+				{
+					//stringBuilder.AppendLine($"Is Array {property.propertyType} - {property.propertyPath}");
+					switch (property.arrayElementType)
+					{
+						case "char":
+						case "Vector3Curve":
+						case "QuaternionCurve":
+							LogPropertyWithSubstringSafety();
+							break;
+						default:
+							LogPropertyWithSubstringSafety(true);
+							depth++;
+							AppendArrayProperty(property);
+							depth--;
+							break;
+					}
+					enterChildren = false;
+				} else if (property.hasChildren) {
+					//Do nothing
+				}
+				else
+				{
+					LogPropertyWithSubstringSafety();
+				}
+				
+				if (EndProperty(enterChildren))
+					break;
+			}
+
+			bool EndProperty(bool enterChildren) => !property.Next(enterChildren) || endProperty != null && SerializedProperty.EqualContents(property, endProperty);
+
+			void AppendArrayProperty(SerializedProperty arrayProp)
+			{
+				if (depth > safetySerializationDepth) return;
+			
+				if (arrayProp.arraySize == 0)
+					return;
+
+				SerializedProperty temp = arrayProp.Copy();
+				temp = temp.GetArrayElementAtIndex(0);
+				SerializedProperty end;
+				if (arrayProp.arraySize > 1)
+					end = arrayProp.GetArrayElementAtIndex(1).Copy();
+				else
+				{
+					end = temp.Copy();
+					end.Next(false);
+				}
+				AppendProperty(stringBuilder, temp, end, temp.propertyPath.Length, depth);
+			}
+
+			void LogPropertyWithSubstringSafety(bool isArray = false)
+			{
+				stringBuilder.Append(' ', depth * 4);
+				if (substringPosition >= property.propertyPath.Length)
+				{
+					//Safety/fallback
+					stringBuilder.Append(property.propertyPath);
+				}
+				else
+				{
+					stringBuilder.Append(property.propertyPath.Substring(substringPosition));
+				}
+
+				if (isArray)
+					stringBuilder.Append("[]");
+
+				stringBuilder.Append(" (");
+				stringBuilder.Append(property.type);
+				stringBuilder.AppendLine(")");
+			}
+		}
+
 		private static readonly Dictionary<string, (Type, FieldInfo)> baseTypeLookup = new Dictionary<string, (Type, FieldInfo)>();
 
 		/// <summary>
@@ -255,7 +358,7 @@ namespace Vertx.Extensions
 				T[] components = @base.GetComponents<T>();
 				foreach (T component in components)
 					yield return component;
-					
+
 				foreach (Transform child in @base)
 				{
 					foreach (var component in OperateOnTransform(child))
@@ -263,7 +366,7 @@ namespace Vertx.Extensions
 				}
 			}
 		}
-		
+
 		public static IEnumerable<GameObject> GetAllGameObjectsInScene(Scene scene)
 		{
 			GameObject[] roots = scene.GetRootGameObjects();
