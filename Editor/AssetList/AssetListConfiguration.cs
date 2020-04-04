@@ -34,6 +34,8 @@ namespace Vertx.Editor
 
 	internal class AssetListConfiguration : ScriptableObject
 	{
+		#pragma warning disable 0649
+		
 		[SerializeField]
 		private AssetType assetType = AssetType.InSceneAndAssets;
 
@@ -48,10 +50,14 @@ namespace Vertx.Editor
 		private AdditionalColumns additionalColumns;
 
 		public AdditionalColumns AdditionalColumns => additionalColumns;
+		
+		#pragma warning restore 0649
 
 		[Serializable]
 		internal class ColumnConfiguration
 		{
+			#pragma warning disable 0649
+			
 			[Tooltip("The path to the property that is displayed")]
 			public string PropertyPath;
 
@@ -79,11 +85,15 @@ namespace Vertx.Editor
 			public ColorPropertyDisplay ColorDisplay;
 
 			public ObjectPropertyDisplay ObjectDisplay;
+			
+			#pragma warning restore 0649
 		}
 
 		[Serializable]
 		internal class ArrayData
 		{
+			#pragma warning disable 0649
+			
 			public ArrayIndexing ArrayIndexing;
 
 			[Tooltip("The property used in conjunction with the query. The first valid query result will provide the index for the for the drawing array element")]
@@ -101,7 +111,11 @@ namespace Vertx.Editor
 			public string ArrayPropertyPath;
 
 			public SerializedPropertyType ArrayPropertyType;
+			
+			#pragma warning restore 0649
 		}
+		
+		#pragma warning disable 0649
 
 		[SerializeField]
 		private ColumnConfiguration[] columns;
@@ -137,6 +151,8 @@ namespace Vertx.Editor
 		public ArrayData IconArrayPropertyInformation => iconArrayPropertyInformation;
 
 		#endregion
+		
+		#pragma warning restore 0649
 
 		public void Configure(Object target)
 		{

@@ -81,7 +81,7 @@ namespace Vertx.Testing.Editor
 
 		public static void CheckPropertyFieldsUnderRootGameObject(GameObject gameObject)
 		{
-			Component[] components = gameObject.GetComponentsInChildren<Component>();
+			Component[] components = gameObject.GetComponentsInChildren<Component>(true);
 			foreach (Component component in components)
 			{
 				Type componentType = component.GetType();
