@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using Vertx.Extensions;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Testing.Editor
@@ -27,7 +28,7 @@ namespace Vertx.Testing.Editor
 					continue;
 				if (property.objectReferenceValue != null || property.objectReferenceInstanceIDValue == 0)
 					continue;
-				string path = GetPathForObject(@object);
+				string path = EditorUtils.GetPathForObject(@object);
 
 				Assert.Fail($"{path}.{property.propertyPath}\nWas found to be missing.");	
 			}

@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 using Vertx.Extensions;
 using Object = UnityEngine.Object;
 
-namespace Vertx.Testing.Editor
+namespace Vertx.Internal.Testing.Editor
 {
 	public class EditorUtilsTests
 	{
@@ -145,6 +145,11 @@ namespace Vertx.Testing.Editor
 							else if (objectFromProperty is short)
 							{
 								if (CheckEquality(objectFromProperty, (short) property.intValue))
+									continue;
+							}
+							else if (objectFromProperty is ushort)
+							{
+								if (CheckEquality(objectFromProperty, (ushort) property.intValue))
 									continue;
 							}
 							else

@@ -2,7 +2,8 @@
     "name": "nUtilities.Tests.Editor",
     "references": [
         "GUID:27619889b8ba8c24980f49ee34dbb44a",
-        "GUID:0acc523941302664db1f4e527237feb3"
+        "GUID:0acc523941302664db1f4e527237feb3",
+        "GUID:9a21a6c0e7edc8847811a76364c76a51"
     ],
     "includePlatforms": [
         "Editor"
@@ -17,5 +18,6 @@
     "defineConstraints": [
         "VERTX_INCLUDE_TESTS"
     ],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }

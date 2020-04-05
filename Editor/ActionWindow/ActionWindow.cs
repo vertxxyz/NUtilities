@@ -25,10 +25,15 @@ namespace Vertx.Editor
 		private static void OpenWindow()
 		{
 			ActionWindow dropdown = new ActionWindow(State);
+
 			int screenWidth = Screen.currentResolution.width;
 			int screenHeight = Screen.currentResolution.height;
 			float width = Mathf.Min(screenWidth / 2f, 640);
-			dropdown.Show(new Rect(screenWidth / 2f - width / 2f, screenHeight - screenHeight / 2f, width, 0));
+			Rect r = new Rect(
+				GUIUtility.ScreenToGUIPoint(new Vector2(screenWidth / 2f - width / 2f, screenHeight - screenHeight / 2f)),
+				new Vector2(width, 0)
+			);
+			dropdown.Show(r);
 		}
 
 		public ActionWindow(AdvancedDropdownState state) : base(state) { }

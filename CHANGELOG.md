@@ -4,6 +4,23 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3.0]
+ - Action Window
+ 	- Animation - Repair Animation Paths in Animation
+ 	- Component - Remove Missing Components in Project
+ 	- Fixed non-centered screen position
+ - Tests
+ 	- AnimationReferenceTests
+ 		- Currently just object paths, will be improved in the future
+ 	- MissingBehaviourTests
+ 		- UnityEvent
+ 		- Components
+ - EnumToValue
+ 	- Alt-Click expand
+ - EditorUtils
+ 	- BuildSceneScope, scope to iterate over all build scenes.
+ 	- GetPathForObject has moved from ReferenceTests to here
+
 ## [1.2.0]
  - Unified all utility classes to use the Utils suffix
  - Asset List

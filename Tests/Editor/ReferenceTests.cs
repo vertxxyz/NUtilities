@@ -62,11 +62,37 @@ namespace Vertx.Testing.Editor
 			}
 		}
 		
+		protected static void RunFunctionOnSceneRootGameObjects(Action<GameObject> rootAction)
+		{
+			int buildSceneCount = SceneManager.sceneCountInBuildSettings;
+			for (int buildIndex = 0; buildIndex < buildSceneCount; buildIndex++)
+			{
+				string path = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+				EditorSceneManager.OpenScene(path, buildIndex == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive);
+				Scene scene = SceneManager.GetSceneByBuildIndex(buildIndex);
+
+				string checkingLabel = $"Checking {scene.name} ({buildIndex + 1}/{buildSceneCount}) for missing references.";
+				
+				GameObject[] rootGameObjects = scene.GetRootGameObjects();
+				int length = rootGameObjects.Length;
+				var progressTotal = (float) (length - 1);
+				for (var i = 0; i < length; i++)
+				{
+					EditorUtility.DisplayProgressBar(checkingLabel, path, i / progressTotal);
+					GameObject rootGameObject = rootGameObjects[i];
+					rootAction(rootGameObject);
+				}
+			}
+		}
+		
 		protected static void RunOnComponentsUnderRootGameObjectIgnoringTransform(GameObject gameObject, Action<Component> componentAction)
 		{
 			Component[] components = gameObject.GetComponentsInChildren<Component>(true);
 			foreach (Component component in components)
 			{
+				if (component == null) //Ignore unassigned components
+					continue;
+
 				//Skip transforms
 				if(component.GetType() == transformType)
 					continue;
@@ -136,44 +162,6 @@ namespace Vertx.Testing.Editor
 				#endif
 				return true;
 			}
-		}
-
-		/// <summary>
-		/// Returns an appropriate full path to the object. This includes the scene if relevant.
-		/// </summary>
-		/// <param name="object">The Object to get a path to</param>
-		/// <returns>Path to the Object</returns>
-		protected static string GetPathForObject(UnityEngine.Object @object)
-		{
-			bool persistent = EditorUtility.IsPersistent(@object);
-			string path = persistent ? $"{AssetDatabase.GetAssetPath(@object)}/" : string.Empty;
-			if (@object is Component component)
-			{
-				//The component already includes the base child in its ToString function, so we can use the parent.
-				Transform transform = component.transform.parent;
-				string tPath;
-				if (transform != null)
-				{
-					tPath = AnimationUtility.CalculateTransformPath(transform, null);
-					if (persistent)
-					{
-						//For prefabs, the path already includes the root. So we can remove it from the transform path.
-						int indexOf = tPath.IndexOf('/');
-						tPath = indexOf < 0 ? null : tPath.Substring(indexOf + 1);
-					}
-				}
-				else
-					tPath = null;
-
-				var scene = component.gameObject.scene;
-				if(scene.IsValid())
-					path += $"({scene.path}) ";
-				path += string.IsNullOrEmpty(tPath) ? component.ToString() : $"{tPath}/{component}";
-			}
-			else
-				path += @object.ToString();
-
-			return path;
 		}
 	}
 }

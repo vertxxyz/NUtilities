@@ -2,6 +2,7 @@ using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using Vertx.Extensions;
 
 namespace Vertx.Testing.Editor
 {
@@ -30,7 +31,7 @@ namespace Vertx.Testing.Editor
 		private static void CheckForMissingAnimationReferences(Animator animator, GameObject root)
 		{
 			StringBuilder result = new StringBuilder("The animator on ");
-			result.Append(GetPathForObject(animator));
+			result.Append(EditorUtils.GetPathForObject(animator));
 			result.AppendLine(" has the following missing references:");
 			bool failed = false;
 			
