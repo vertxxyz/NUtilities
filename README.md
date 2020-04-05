@@ -1,6 +1,8 @@
 # NUtilities
 A collection of various tools and utilities for Unity.
 
+**2019.1+**
+
 ## Contents:
 ##### Utilities:
 - [Asset List](https://github.com/vertxxyz/NUtilities/wiki/Asset-List)

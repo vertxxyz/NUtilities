@@ -258,10 +258,7 @@ namespace Vertx.Testing.Editor
 
 			void RecursivelyFindMissingComponents(Transform transform)
 			{
-				var componentsOnTransform = transform.GetComponents<Component>();
-				foreach (Component component in componentsOnTransform)
-					Assert.IsNotNull(component, $"{EditorUtils.GetPathForObject(transform.gameObject)} has a missing script Component.");
-
+				Assert.Zero(GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject), $"{EditorUtils.GetPathForObject(transform.gameObject)} has a missing script Component.");
 				foreach (Transform child in transform)
 					RecursivelyFindMissingComponents(child);
 			}

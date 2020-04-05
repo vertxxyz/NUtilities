@@ -427,19 +427,19 @@ namespace Vertx.Extensions
 			foreach (GameObject root in roots)
 			{
 				Transform @base = root.transform;
-				foreach (GameObject gameObject in OperateOnTransform(@base))
+				foreach (GameObject gameObject in GetGameObjectsIncludingRoot(@base))
 					yield return gameObject;
 			}
-
-			IEnumerable<GameObject> OperateOnTransform(Transform @base)
+		}
+		
+		public static IEnumerable<GameObject> GetGameObjectsIncludingRoot(Transform @base)
+		{
+			//Get gameObject
+			yield return @base.gameObject;
+			foreach (Transform child in @base)
 			{
-				//Get gameObject
-				yield return @base.gameObject;
-				foreach (Transform child in @base)
-				{
-					foreach (var component in OperateOnTransform(child))
-						yield return component;
-				}
+				foreach (var gameObject in GetGameObjectsIncludingRoot(child))
+					yield return gameObject;
 			}
 		}
 

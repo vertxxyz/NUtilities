@@ -5,7 +5,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Vertx.Extensions;
-using Object = UnityEngine.Object;
 
 namespace Vertx.Editor
 {
@@ -177,15 +176,28 @@ namespace Vertx.Editor
 				cleanupMissingComponentsTitle,
 				"Component", () =>
 				{
+					GameObject[] prefabs = EditorUtils.LoadAssetsOfType<GameObject>();
+					foreach (GameObject prefab in prefabs)
+					{
+						int countRemoved = RemoveMissingScriptComponentsOnGameObjects(EditorUtils.GetGameObjectsIncludingRoot(prefab.transform));
+						if (countRemoved > 0)
+						{
+							Debug.Log($"Removed {countRemoved} missing components from {EditorUtils.GetPathForObject(prefab)}");
+							PrefabUtility.SavePrefabAsset(prefab);
+						}
+					}
+
+
+					//Fix scenes after fixing prefabs.
 					using (var scope = new EditorUtils.BuildSceneScope())
 					{
 						foreach (var scene in scope)
 						{
 							IEnumerable<GameObject> gameObjects = EditorUtils.GetAllGameObjectsInScene(scene);
-							int countRemoved = RemoveMissingScriptsComponentsOnGameObjects(gameObjects);
+							int countRemoved = RemoveMissingScriptComponentsOnGameObjects(gameObjects);
 							if (countRemoved > 0)
 							{
-								Debug.Log($"Removed {countRemoved} GameObject names in {scene.name}");
+								Debug.Log($"Removed {countRemoved} missing components in {scene.name}");
 								EditorSceneManager.SaveScene(scene);
 							}
 						}
@@ -193,33 +205,25 @@ namespace Vertx.Editor
 				});
 		}
 
-		static int RemoveMissingScriptsComponentsOnGameObjects(IEnumerable<GameObject> gameObject)
+		static int RemoveMissingScriptComponentsOnGameObjects(IEnumerable<GameObject> gameObject)
 		{
 			int countRemoved = 0;
 			foreach (GameObject gO in gameObject)
-			{
-				var components = gO.GetComponents<Component>();
-				foreach (Component component in components)
-				{
-					if (component == null)
-					{
-						SerializedObject sO = new SerializedObject(gO);
-						var componentsProp = sO.FindProperty("m_Component");
-						for (int i = components.Length - 1; i >= 0; i--)
-						{
-							//If it's a prefab and connected to it, then we should be modifying the prefab instead.
-							if(PrefabUtility.GetPrefabInstanceStatus(components[i]) != PrefabInstanceStatus.NotAPrefab) continue;
-							if (components[i] == null)
-							{
-								componentsProp.DeleteArrayElementAtIndex(i);
-								countRemoved++;
-							}
-						}
+				countRemoved += RemoveMissingScriptComponentsOnGameObject(gO);
 
-						sO.ApplyModifiedPropertiesWithoutUndo();
-						break;
-					}
-				}
+			return countRemoved;
+		}
+
+		static int RemoveMissingScriptComponentsOnGameObject(GameObject gameObject)
+		{
+			//If it's a prefab and connected to it, then we should be modifying the prefab instead.
+			if (PrefabUtility.GetPrefabInstanceStatus(gameObject) != PrefabInstanceStatus.NotAPrefab) return 0;
+			
+			int countRemoved = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(gameObject);
+			if (countRemoved > 0)
+			{
+				GameObjectUtility.RemoveMonoBehavioursWithMissingScript(gameObject);
+				EditorUtility.SetDirty(gameObject);
 			}
 
 			return countRemoved;
