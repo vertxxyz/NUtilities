@@ -6,7 +6,7 @@ using Vertx.Extensions;
 
 namespace Vertx.Editor
 {
-	[CustomEditor(typeof(ScriptableObject), true)]
+	[CustomEditor(typeof(ScriptableObject), true), CanEditMultipleObjects]
 	public class ScriptableObjectInspector : UnityEditor.Editor
 	{
 		private GUIContent selectContent, searchContent, searchContentSmall;
