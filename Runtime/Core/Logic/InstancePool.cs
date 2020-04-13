@@ -35,7 +35,20 @@ namespace Vertx
 		/// <param name="rotation">Rotation of the instance</param>
 		/// <param name="space">Which space the position and rotation is applied in</param>
 		/// <returns>An instance retrieved from the pool.</returns>
-		public static TInstanceType Get(TInstanceType prefab, Transform parent, Vector3 position, Quaternion rotation, Space space = Space.World)
+		public static TInstanceType Get(TInstanceType prefab, Transform parent, Vector3 position, Quaternion rotation, Space space = Space.World) =>
+			Get(prefab, parent, position, rotation, Vector3.one, space);
+
+		/// <summary>
+		/// Retrieves a positioned instance from the pool.
+		/// </summary>
+		/// <param name="prefab">The prefab key to retrieve instances of.</param>
+		/// <param name="parent">The parent to parent instances under.</param>
+		/// <param name="position">Position of the instance</param>
+		/// <param name="rotation">Rotation of the instance</param>
+		/// <param name="localScale">Local Scale of the instance</param>
+		/// <param name="space">Which space the position and rotation is applied in</param>
+		/// <returns>An instance retrieved from the pool.</returns>
+		public static TInstanceType Get(TInstanceType prefab, Transform parent, Vector3 position, Quaternion rotation, Vector3 localScale, Space space = Space.World)
 		{
 			Assert.IsNotNull(prefab, $"Prefab passed to InstancePool<{typeof(TInstanceType).Name}>{nameof(Get)} was null");
 			
@@ -66,10 +79,12 @@ namespace Vertx
 						{
 							case Space.World:
 								t.SetPositionAndRotation(position, rotation);
+								t.localScale = Vector3.one;
 								break;
 							case Space.Self:
 								t.localPosition = position;
 								t.localRotation = rotation;
+								t.localScale = Vector3.one;
 								break;
 							default:
 								throw new ArgumentOutOfRangeException(nameof(space), space, null);
