@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using static Vertx.Editor.AssetListUtility;
 using Object = UnityEngine.Object;
 

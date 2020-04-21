@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 
 namespace Vertx.Editor
 {

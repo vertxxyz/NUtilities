@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	public static class CodeUtils
 	{

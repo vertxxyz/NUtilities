@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine.UIElements;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	public static class StyleExtensions
 	{

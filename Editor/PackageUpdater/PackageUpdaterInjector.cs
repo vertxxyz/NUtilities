@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Vertx.Editor

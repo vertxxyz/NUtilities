@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.3.0]
  - Bumped version to 2019.1
+ - Moved Vertx.Extensions to Vertx.Editor.Extensions
+ - Instance Pool
+    - Added warm-up methods
  - Action Window
  	- Animation - Repair Animation Paths in Animation
  	- Component - Remove Missing Components in Project
@@ -21,6 +24,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - EditorUtils
  	- BuildSceneScope, scope to iterate over all build scenes.
  	- GetPathForObject has moved from ReferenceTests to here
+ - Added DebugUtils, a class for drawing complex wireframes for debugging
+    - BoxCast
+    - SphereCast
+    - RaycastHit array
+ - Fixed multi-editing for custom inspectors
 
 ## [1.2.0]
  - Unified all utility classes to use the Utils suffix

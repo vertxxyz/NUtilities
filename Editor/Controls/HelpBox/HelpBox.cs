@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 
 namespace Vertx.Controls
 {

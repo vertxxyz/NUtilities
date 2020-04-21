@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Testing.Editor

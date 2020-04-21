@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Vertx.Controls;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	internal class MaterialPropertyRemapper : EditorWindow
 	{

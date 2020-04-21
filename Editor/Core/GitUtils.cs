@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using UnityEngine;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	/* Copyright 2019 mob-sakai																					*
 	 * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and		*

@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Testing.Editor

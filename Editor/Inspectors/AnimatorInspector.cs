@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 
 namespace Vertx.Editor
 {

@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using Object = UnityEngine.Object;
 using static Vertx.Editor.AssetListUtility;
 

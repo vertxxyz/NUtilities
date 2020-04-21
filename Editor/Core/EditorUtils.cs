@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	public static class EditorUtils
 	{

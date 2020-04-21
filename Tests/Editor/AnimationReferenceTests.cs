@@ -2,7 +2,7 @@ using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 
 namespace Vertx.Testing.Editor
 {

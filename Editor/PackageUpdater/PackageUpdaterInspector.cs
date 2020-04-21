@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using static Vertx.Editor.PackageUpdater;
 using HelpBox = Vertx.Controls.HelpBox;
 

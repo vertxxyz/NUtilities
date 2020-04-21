@@ -7,7 +7,7 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Editor

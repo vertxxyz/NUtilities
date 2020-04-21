@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -17,6 +18,29 @@ namespace Vertx
 		/// </summary>
 		private static readonly Dictionary<TInstanceType, Stack<TInstanceType>> pool = new Dictionary<TInstanceType, Stack<TInstanceType>>();
 
+		public static void Warmup(TInstanceType prefab, int count, Transform parent = null)
+		{
+			if (!pool.TryGetValue(prefab, out var stack))
+				pool.Add(prefab, stack = new Stack<TInstanceType>());
+			for (int i = stack.Count; i < count; i++)
+			{
+				var instance = Object.Instantiate(prefab, parent);
+				stack.Push(instance);
+			}
+		}
+		
+		public static IEnumerator WarmupCoroutine(TInstanceType prefab, int count, Transform parent = null)
+		{
+			if (!pool.TryGetValue(prefab, out var stack))
+				pool.Add(prefab, stack = new Stack<TInstanceType>());
+			for (int i = stack.Count; i < count; i++)
+			{
+				var instance = Object.Instantiate(prefab, parent);
+				stack.Push(instance);
+				yield return null;
+			}
+		}
+		
 		/// <summary>
 		/// Retrieves an instance from the pool, positioned at the origin.
 		/// </summary>

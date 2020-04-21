@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 using Object = UnityEngine.Object;
 
 namespace Vertx.Controls

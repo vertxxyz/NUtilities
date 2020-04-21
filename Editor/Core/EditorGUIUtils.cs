@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 
-namespace Vertx.Extensions
+namespace Vertx.Editor.Extensions
 {
 	public static class EditorGUIUtils
 	{

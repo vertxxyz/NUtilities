@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Vertx.Extensions;
+using Vertx.Editor.Extensions;
 
 namespace Vertx.Editor
 {
