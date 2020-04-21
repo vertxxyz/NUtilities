@@ -25,6 +25,8 @@ namespace Vertx
 			for (int i = stack.Count; i < count; i++)
 			{
 				var instance = Object.Instantiate(prefab, parent);
+				instance.name = prefab.name;
+				instance.gameObject.SetActive(false);
 				stack.Push(instance);
 			}
 		}
@@ -36,6 +38,8 @@ namespace Vertx
 			for (int i = stack.Count; i < count; i++)
 			{
 				var instance = Object.Instantiate(prefab, parent);
+				instance.name = prefab.name;
+				instance.gameObject.SetActive(false);
 				stack.Push(instance);
 				yield return null;
 			}
@@ -137,7 +141,7 @@ namespace Vertx
 				default:
 					throw new ArgumentOutOfRangeException(nameof(space), space, null);
 			}
-
+			instance.name = prefab.name;
 			return instance;
 		}
 
