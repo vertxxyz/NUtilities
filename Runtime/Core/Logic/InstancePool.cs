@@ -3,10 +3,30 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Vertx
 {
+	internal static class InstancePool
+	{
+		private const string instancePoolSceneName = "Instance Pool";
+		private static Scene instancePoolScene;
+
+		public static Scene GetInstancePoolScene()
+		{
+			if (!instancePoolScene.IsValid() || !instancePoolScene.isLoaded)
+			{
+				instancePoolScene = GetNewScene();
+				return instancePoolScene;
+			}
+
+			return instancePoolScene;
+			
+			Scene GetNewScene () => SceneManager.CreateScene(instancePoolSceneName, new CreateSceneParameters(LocalPhysicsMode.None));
+		}
+	}
+	
 	/// <summary>
 	/// A pool for Component instances.
 	/// </summary>
@@ -18,6 +38,13 @@ namespace Vertx
 		/// </summary>
 		private static readonly Dictionary<TInstanceType, Stack<TInstanceType>> pool = new Dictionary<TInstanceType, Stack<TInstanceType>>();
 
+		private static void MoveToInstancePoolScene(TInstanceType instance)
+		{
+			instance.transform.SetParent(null);
+			SceneManager.MoveGameObjectToScene(instance.gameObject, InstancePool.GetInstancePoolScene());
+		}
+		//private static void MoveToInstanceToParentScene(TInstanceType instance) => SceneManager.MoveGameObjectToScene(instance.gameObject, InstancePool.GetInstancePoolScene());
+
 		public static void Warmup(TInstanceType prefab, int count, Transform parent = null)
 		{
 			if (!pool.TryGetValue(prefab, out var stack))
@@ -27,6 +54,7 @@ namespace Vertx
 				var instance = Object.Instantiate(prefab, parent);
 				instance.name = prefab.name;
 				instance.gameObject.SetActive(false);
+				MoveToInstancePoolScene(instance);
 				stack.Push(instance);
 			}
 		}
@@ -40,6 +68,7 @@ namespace Vertx
 				var instance = Object.Instantiate(prefab, parent);
 				instance.name = prefab.name;
 				instance.gameObject.SetActive(false);
+				MoveToInstancePoolScene(instance);
 				stack.Push(instance);
 				yield return null;
 			}
@@ -161,6 +190,7 @@ namespace Vertx
 
 			// Disable the object and push it to the stack.
 			instance.gameObject.SetActive(false);
+			MoveToInstancePoolScene(instance);
 			stack.Push(instance);
 		}
 

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
  - Moved Vertx.Extensions to Vertx.Editor.Extensions
  - Instance Pool
     - Added warm-up methods
+    - Added runtime scene for pooled instances
  - Action Window
  	- Animation - Repair Animation Paths in Animation
  	- Component - Remove Missing Components in Project
