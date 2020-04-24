@@ -23,8 +23,24 @@ namespace Core
 
 		public static void Circle(Vector3 center, Vector3 normal, float radius, LineDelegate lineDelegate, int segmentCount = 100)
 		{
-			Vector3 alternate = GetAxisAlignedPerpendicular(normal);
-			Vector3 direction = Vector3.Cross(normal, alternate) * radius;
+			Vector3 cross = Vector3.Cross(normal, GetAxisAlignedPerpendicular(normal));
+			cross.EnsureNormalized();
+			Vector3 direction = cross * radius;
+			Vector3 lastPos = center + direction;
+			Quaternion rotation = Quaternion.AngleAxis(1 / (float) segmentCount * 360, normal);
+			Quaternion currentRotation = rotation;
+			for (int i = 1; i <= segmentCount; i++)
+			{
+				Vector3 nextPos = center + currentRotation * direction;
+				lineDelegate(lastPos, nextPos);
+				currentRotation = rotation * currentRotation;
+				lastPos = nextPos;
+			}
+		}
+		
+		public static void CircleFast(Vector3 center, Vector3 normal, Vector3 cross, float radius, LineDelegate lineDelegate, int segmentCount = 100)
+		{
+			Vector3 direction = cross * radius;
 			Vector3 lastPos = center + direction;
 			Quaternion rotation = Quaternion.AngleAxis(1 / (float) segmentCount * 360, normal);
 			Quaternion currentRotation = rotation;
@@ -51,6 +67,8 @@ namespace Core
 				lastPos = nextPos;
 			}
 		}
+		
+		
 
 		#endregion
 
@@ -68,6 +86,14 @@ namespace Core
 			int iterationCount = 10)
 			=> DrawSphereCast(origin, radius, direction, distance, StartColor, EndColor, iterationCount);
 
+		private static void EnsureNormalized(this ref Vector3 vector3)
+		{
+			float sqrMag = vector3.sqrMagnitude;
+			if (Mathf.Approximately(sqrMag, 1))
+				return;
+			vector3 /= Mathf.Sqrt(sqrMag);
+		}
+
 		public static void DrawSphereCast(
 			Vector3 origin,
 			float radius,
@@ -77,7 +103,9 @@ namespace Core
 			Color colorEnd,
 			int iterationCount = 10)
 		{
+			direction.EnsureNormalized();
 			Vector3 crossA = Vector3.Cross(direction, GetAxisAlignedPerpendicular(direction));
+			crossA.EnsureNormalized();
 			Vector3 crossB = Vector3.Cross(crossA, direction);
 			Color color = colorStart;
 			Arc(origin, crossA, crossB, radius, 180, DrawLine);
@@ -88,7 +116,7 @@ namespace Core
 			{
 				float t = i / ((float) iterationCount - 1);
 				color = Color.Lerp(colorStart, colorEnd, t);
-				Circle(origin + scaledDirection * t, direction, radius, DrawLine);
+				CircleFast(origin + scaledDirection * t, direction, crossA, radius, DrawLine);
 			}
 
 			Vector3 end = origin + scaledDirection;
@@ -122,6 +150,8 @@ namespace Core
 			Color colorEnd,
 			int iterationCount = 10)
 		{
+			direction.EnsureNormalized();
+			
 			Vector3 up = orientation * new Vector3(0, halfExtents.y, 0);
 			Vector3 right = orientation * new Vector3(halfExtents.x, 0, 0);
 			Vector3 forward = orientation * new Vector3(0, 0, halfExtents.z);

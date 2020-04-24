@@ -428,7 +428,7 @@ namespace Vertx.Editor.Extensions
 		}
 
 		private static Color OutlineColor => EditorGUIUtility.isProSkin ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
-		private static Color BackgroundColor => EditorGUIUtility.isProSkin ? new Color(0.5f, 0.5f, 0.5f) : new Color(0.9f, 0.9f, 0.9f);
+		private static Color BackgroundColor => EditorGUIUtility.isProSkin ? new Color(0.2f, 0.2f, 0.2f) : new Color(0.9f, 0.9f, 0.9f);
 
 		#endregion
 
