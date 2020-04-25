@@ -11,7 +11,7 @@ namespace Core
 		public static Color StartColor => new Color(1f, 0.4f, 0.3f);
 		public static Color EndColor => new Color(0.4f, 1f, 0.3f);
 
-		public static Vector3 GetAxisAlignedPerpendicular(Vector3 normal)
+		private static Vector3 GetAxisAlignedAlternate(Vector3 normal)
 		{
 			Vector3 alternate = new Vector3(0, 0, 1);
 			if (Mathf.Abs(Vector3.Dot(normal, alternate)) > 0.9f)
@@ -19,12 +19,18 @@ namespace Core
 			return alternate;
 		}
 
+		public static Vector3 GetAxisAlignedPerpendicular(Vector3 normal)
+		{
+			Vector3 cross = Vector3.Cross(normal, GetAxisAlignedAlternate(normal));
+			cross.EnsureNormalized();
+			return cross;
+		}
+
 		#region Shapes
 
-		public static void Circle(Vector3 center, Vector3 normal, float radius, LineDelegate lineDelegate, int segmentCount = 100)
+		public static void DrawCircle(Vector3 center, Vector3 normal, float radius, LineDelegate lineDelegate, int segmentCount = 100)
 		{
-			Vector3 cross = Vector3.Cross(normal, GetAxisAlignedPerpendicular(normal));
-			cross.EnsureNormalized();
+			Vector3 cross = GetAxisAlignedPerpendicular(normal);
 			Vector3 direction = cross * radius;
 			Vector3 lastPos = center + direction;
 			Quaternion rotation = Quaternion.AngleAxis(1 / (float) segmentCount * 360, normal);
@@ -38,7 +44,7 @@ namespace Core
 			}
 		}
 		
-		public static void CircleFast(Vector3 center, Vector3 normal, Vector3 cross, float radius, LineDelegate lineDelegate, int segmentCount = 100)
+		public static void DrawCircleFast(Vector3 center, Vector3 normal, Vector3 cross, float radius, LineDelegate lineDelegate, int segmentCount = 100)
 		{
 			Vector3 direction = cross * radius;
 			Vector3 lastPos = center + direction;
@@ -53,7 +59,7 @@ namespace Core
 			}
 		}
 
-		public static void Arc(Vector3 center, Vector3 normal, Vector3 startDirection, float radius, float totalAngle, LineDelegate lineDelegate, int segmentCount = 50)
+		public static void DrawArc(Vector3 center, Vector3 normal, Vector3 startDirection, float radius, float totalAngle, LineDelegate lineDelegate, int segmentCount = 50)
 		{
 			Vector3 direction = startDirection * radius;
 			Vector3 lastPos = center + direction;
@@ -67,8 +73,6 @@ namespace Core
 				lastPos = nextPos;
 			}
 		}
-		
-		
 
 		#endregion
 
@@ -104,25 +108,24 @@ namespace Core
 			int iterationCount = 10)
 		{
 			direction.EnsureNormalized();
-			Vector3 crossA = Vector3.Cross(direction, GetAxisAlignedPerpendicular(direction));
-			crossA.EnsureNormalized();
+			Vector3 crossA = GetAxisAlignedPerpendicular(direction);
 			Vector3 crossB = Vector3.Cross(crossA, direction);
 			Color color = colorStart;
-			Arc(origin, crossA, crossB, radius, 180, DrawLine);
-			Arc(origin, crossB, crossA, radius, -180, DrawLine);
+			DrawArc(origin, crossA, crossB, radius, 180, DrawLine);
+			DrawArc(origin, crossB, crossA, radius, -180, DrawLine);
 
 			Vector3 scaledDirection = direction * distance;
 			for (int i = 0; i < iterationCount; i++)
 			{
 				float t = i / ((float) iterationCount - 1);
 				color = Color.Lerp(colorStart, colorEnd, t);
-				CircleFast(origin + scaledDirection * t, direction, crossA, radius, DrawLine);
+				DrawCircleFast(origin + scaledDirection * t, direction, crossA, radius, DrawLine);
 			}
 
 			Vector3 end = origin + scaledDirection;
 			color = colorEnd;
-			Arc(end, crossA, crossB, radius, -180, DrawLine);
-			Arc(end, crossB, crossA, radius, 180, DrawLine);
+			DrawArc(end, crossA, crossB, radius, -180, DrawLine);
+			DrawArc(end, crossB, crossA, radius, 180, DrawLine);
 
 			void DrawLine(Vector3 a, Vector3 b) => Debug.DrawLine(a, b, color);
 		}
@@ -280,6 +283,26 @@ namespace Core
 		#endregion
 
 		#region RaycastHits
+
+		public static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, int maxCount = -1) =>
+			DrawSphereCastHits(hits, radius, forward, new Color(1, 0.1f, 0.2f), maxCount);
+
+		private static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, Color color, int maxCount = -1)
+		{
+			if (maxCount < 0)
+				maxCount = hits.Length;
+			
+			for (int i = 0; i < maxCount; i++)
+			{
+				RaycastHit hit = hits[i];
+				Vector3 cross = Vector3.Cross(forward, hit.normal);
+				DrawCircleFast(hit.point + hit.normal * radius, cross, hit.normal, radius, DrawLine);
+				Vector3 secondCross = Vector3.Cross(cross, hit.normal);
+				DrawCircleFast(hit.point + hit.normal * radius, secondCross, hit.normal, radius, DrawLine);
+			}
+			
+			void DrawLine(Vector3 a, Vector3 b) => Debug.DrawLine(a, b, color);
+		}
 
 		public static void DrawRaycastHits(RaycastHit[] hits, float rayLength = 1, int maxCount = -1, float duration = 0)
 			=> DrawRaycastHits(hits, new Color(1, 0.1f, 0.2f), rayLength, maxCount, duration);
