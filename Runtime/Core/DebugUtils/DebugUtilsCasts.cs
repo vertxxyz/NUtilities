@@ -29,10 +29,11 @@ namespace Core
 			Vector3 crossA = GetAxisAlignedPerpendicular(direction);
 			Vector3 crossB = Vector3.Cross(crossA, direction);
 			Color color = colorStart;
-			DrawArc(origin, crossA, crossB, radius, 180, DrawLine);
-			DrawArc(origin, crossB, crossA, radius, -180, DrawLine);
+			DrawCircleFast(origin, crossA, crossB, radius, DrawLine);
+			DrawCircleFast(origin, crossB, crossA, radius, DrawLine);
 
 			Vector3 scaledDirection = direction * distance;
+			iterationCount += 2;//Add caps
 			for (int i = 0; i < iterationCount; i++)
 			{
 				float t = i / ((float) iterationCount - 1);
@@ -42,8 +43,8 @@ namespace Core
 
 			Vector3 end = origin + scaledDirection;
 			color = colorEnd;
-			DrawArc(end, crossA, crossB, radius, -180, DrawLine);
-			DrawArc(end, crossB, crossA, radius, 180, DrawLine);
+			DrawCircleFast(end, crossA, crossB, radius, DrawLine);
+			DrawCircleFast(end, crossB, crossA, radius, DrawLine);
 
 			void DrawLine(Vector3 a, Vector3 b, float f) => Debug.DrawLine(a, b, color);
 		}
