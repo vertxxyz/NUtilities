@@ -33,7 +33,7 @@ namespace Core
 			DrawCircleFast(origin, crossB, crossA, radius, DrawLine);
 
 			Vector3 scaledDirection = direction * distance;
-			iterationCount += 2;//Add caps
+			iterationCount += 2; //Add caps
 			for (int i = 0; i < iterationCount; i++)
 			{
 				float t = i / ((float) iterationCount - 1);
@@ -73,11 +73,7 @@ namespace Core
 			int iterationCount = 1)
 		{
 			direction.EnsureNormalized();
-			
-			Vector3 up = orientation * new Vector3(0, halfExtents.y, 0);
-			Vector3 right = orientation * new Vector3(halfExtents.x, 0, 0);
-			Vector3 forward = orientation * new Vector3(0, 0, halfExtents.z);
-			
+
 			Vector3 upNormalised = orientation * new Vector3(0, 1, 0);
 			Vector3 rightNormalised = orientation * new Vector3(1, 0, 0);
 			Vector3 forwardNormalised = orientation * new Vector3(0, 0, 1);
@@ -92,59 +88,34 @@ namespace Core
 			float dotUpAbsValue = Mathf.Abs(dotUpValue);
 
 			bool aligned = dotUpAbsValue > 0.99999f || dotUpAbsValue < 0.00001f;
-			
+
 			Color color = colorStart;
 
-			Vector3 uFL = up + forward - right;
-			Vector3 uFR = up + forward + right;
-			Vector3 uBL = up - forward - right;
-			Vector3 uBR = up - forward + right;
-			Vector3 dFL = - up + forward - right;
-			Vector3 dFR = - up + forward + right;
-			Vector3 dBL = - up - forward - right;
-			Vector3 dBR = - up - forward + right;
+			DrawBoxStructure structure = new DrawBoxStructure(halfExtents, orientation);
 
-			DrawBox(center);
+			Vector3
+				uFL = structure.UFL,
+				uFR = structure.UFR,
+				uBL = structure.UBL,
+				uBR = structure.UBR,
+				dFL = structure.DFL,
+				dFR = structure.DFR,
+				dBL = structure.DBL,
+				dBR = structure.DBR;
+
+			DrawBox(center, structure, DrawLine);
 
 			Vector3 endCenter = center + direction * distance;
 
 			DrawBoxConnectors(center, endCenter);
 
 			color = colorEnd;
-			DrawBox(endCenter);
-
-			void DrawBox(Vector3 boxCenter)
-			{
-				Vector3 posUFL = uFL + boxCenter;
-				Vector3 posUFR = uFR + boxCenter;
-				Vector3 posUBL = uBL + boxCenter;
-				Vector3 posUBR = uBR + boxCenter;
-				Vector3 posDFL = dFL + boxCenter;
-				Vector3 posDFR = dFR + boxCenter;
-				Vector3 posDBL = dBL + boxCenter;
-				Vector3 posDBR = dBR + boxCenter;
-
-				//up
-				DrawLine(posUFL, posUFR);
-				DrawLine(posUFR, posUBR);
-				DrawLine(posUBR, posUBL);
-				DrawLine(posUBL, posUFL);
-				//down
-				DrawLine(posDFL, posDFR);
-				DrawLine(posDFR, posDBR);
-				DrawLine(posDBR, posDBL);
-				DrawLine(posDBL, posDFL);
-				//down to up
-				DrawLine(posDFL, posUFL);
-				DrawLine(posDFR, posUFR);
-				DrawLine(posDBR, posUBR);
-				DrawLine(posDBL, posUBL);
-			}
+			DrawBox(endCenter, structure, DrawLine);
 
 			void DrawBoxConnectors(Vector3 boxCenterA, Vector3 boxCenterB)
 			{
 				if (iterationCount <= 0) return;
-				
+
 				if (aligned)
 				{
 					if (dotUpAbsValue > 0.5f)
@@ -181,14 +152,15 @@ namespace Core
 				}
 				else
 				{
-					bool validUFL = ValidateConnector(dotUp, dotForward, !dotRight);
-					bool validUFR = ValidateConnector(dotUp, dotForward, dotRight);
-					bool validUBL = ValidateConnector(dotUp, !dotForward, !dotRight);
-					bool validUBR = ValidateConnector(dotUp, !dotForward, dotRight);
-					bool validDFL = ValidateConnector(!dotUp, dotForward, !dotRight);
-					bool validDFR = ValidateConnector(!dotUp, dotForward, dotRight);
-					bool validDBL = ValidateConnector(!dotUp, !dotForward, !dotRight);
-					bool validDBR = ValidateConnector(!dotUp, !dotForward, dotRight);
+					bool
+						validUFL = ValidateConnector(dotUp, dotForward, !dotRight),
+						validUFR = ValidateConnector(dotUp, dotForward, dotRight),
+						validUBL = ValidateConnector(dotUp, !dotForward, !dotRight),
+						validUBR = ValidateConnector(dotUp, !dotForward, dotRight),
+						validDFL = ValidateConnector(!dotUp, dotForward, !dotRight),
+						validDFR = ValidateConnector(!dotUp, dotForward, dotRight),
+						validDBL = ValidateConnector(!dotUp, !dotForward, !dotRight),
+						validDBR = ValidateConnector(!dotUp, !dotForward, dotRight);
 
 					bool ValidateConnector(bool a, bool b, bool c)
 					{
@@ -206,9 +178,10 @@ namespace Core
 							if (count != 1)
 								return false;
 						}
+
 						return true;
 					}
-					
+
 					//up
 					DrawConnectorIteration(validUFL, validUFR, uFL, uFR);
 					DrawConnectorIteration(validUFR, validUBR, uFR, uBR);
@@ -250,19 +223,19 @@ namespace Core
 					Vector3 currentA = startA;
 					Vector3 currentB = startB;
 
-					float diff = 1 / (float)(iterationCount + 1);
-					
+					float diff = 1 / (float) (iterationCount + 1);
+
 					for (int i = 1; i < iterationCount; i++)
 					{
 						float t = i / (float) iterationCount;
 						color = Color.Lerp(colorStart, colorEnd, t + diff);
 						Vector3 nextA = Vector3.Lerp(startA, endA, t);
 						Vector3 nextB = Vector3.Lerp(startB, endB, t);
-						
+
 						DrawLine(currentA, nextA);
 						DrawLine(currentB, nextB);
 						DrawLine(nextA, nextB);
-						
+
 						currentA = nextA;
 						currentB = nextB;
 					}
@@ -283,11 +256,11 @@ namespace Core
 		public static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, int maxCount = -1) =>
 			DrawSphereCastHits(hits, radius, forward, new Color(1, 0.1f, 0.2f), maxCount);
 
-		private static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, Color color, int maxCount = -1)
+		public static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, Color color, int maxCount = -1)
 		{
 			if (maxCount < 0)
 				maxCount = hits.Length;
-			
+
 			for (int i = 0; i < maxCount; i++)
 			{
 				RaycastHit hit = hits[i];
@@ -296,8 +269,28 @@ namespace Core
 				Vector3 secondCross = Vector3.Cross(cross, hit.normal);
 				DrawCircleFast(hit.point + hit.normal * radius, secondCross, hit.normal, radius, DrawLine);
 			}
-			
+
 			void DrawLine(Vector3 a, Vector3 b, float f) => Debug.DrawLine(a, b, new Color(color.r, color.g, color.b, Mathf.Pow(1 - Mathf.Abs(f - 0.5f) * 2, 2) * color.a));
+		}
+
+		public static void DrawBoxCastHits(RaycastHit[] hits, Vector3 origin, Vector3 halfExtents, Vector3 direction, Quaternion orientation, int maxCount = -1) =>
+			DrawBoxCastHits(hits, origin, halfExtents, direction, orientation, new Color(1, 0.1f, 0.2f), maxCount);
+
+		public static void DrawBoxCastHits(RaycastHit[] hits, Vector3 origin, Vector3 halfExtents, Vector3 direction, Quaternion orientation, Color color, int maxCount = -1)
+		{
+			if (maxCount < 0)
+				maxCount = hits.Length;
+
+			DrawBoxStructure structure = new DrawBoxStructure(halfExtents, orientation);
+
+			for (int i = 0; i < maxCount; i++)
+			{
+				RaycastHit hit = hits[i];
+				Vector3 center = origin + direction * hit.distance;
+				DrawBox(center, structure, DrawLine);
+			}
+
+			void DrawLine(Vector3 a, Vector3 b) => Debug.DrawLine(a, b, color);
 		}
 
 		public static void DrawRaycastHits(RaycastHit[] hits, float rayLength = 1, int maxCount = -1, float duration = 0)

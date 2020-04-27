@@ -4,13 +4,13 @@ namespace Core
 {
 	public static partial class DebugUtils
 	{
-		#region Shared
+		public delegate void LineDelegateSimple(Vector3 a, Vector3 b);
 
 		public delegate void LineDelegate(Vector3 a, Vector3 b, float t);
 
 		public static Color StartColor => new Color(1f, 0.4f, 0.3f);
 		public static Color EndColor => new Color(0.4f, 1f, 0.3f);
-		
+
 		private static void EnsureNormalized(this ref Vector3 vector3)
 		{
 			float sqrMag = vector3.sqrMagnitude;
@@ -36,6 +36,8 @@ namespace Core
 
 		#region Shapes
 
+		#region Circles And Arcs
+
 		public static void DrawCircle(Vector3 center, Vector3 normal, float radius, LineDelegate lineDelegate, int segmentCount = 100)
 		{
 			Vector3 cross = GetAxisAlignedPerpendicular(normal);
@@ -51,7 +53,7 @@ namespace Core
 				lastPos = nextPos;
 			}
 		}
-		
+
 		public static void DrawCircleFast(Vector3 center, Vector3 normal, Vector3 cross, float radius, LineDelegate lineDelegate, int segmentCount = 100)
 		{
 			Vector3 direction = cross * radius;
@@ -80,6 +82,72 @@ namespace Core
 				currentRotation = rotation * currentRotation;
 				lastPos = nextPos;
 			}
+		}
+
+		#endregion
+
+		#region Boxes
+
+		public struct DrawBoxStructure
+		{
+			public Vector3 UFL, UFR, UBL, UBR, DFL, DFR, DBL, DBR;
+
+			public DrawBoxStructure(
+				Vector3 halfExtents,
+				Quaternion orientation)
+			{
+				Vector3
+					up = orientation * new Vector3(0, halfExtents.y, 0),
+					right = orientation * new Vector3(halfExtents.x, 0, 0),
+					forward = orientation * new Vector3(0, 0, halfExtents.z);
+				UFL = up + forward - right;
+				UFR = up + forward + right;
+				UBL = up - forward - right;
+				UBR = up - forward + right;
+				DFL = -up + forward - right;
+				DFR = -up + forward + right;
+				DBL = -up - forward - right;
+				DBR = -up - forward + right;
+			}
+		}
+
+		public static void DrawBox(
+			Vector3 center,
+			Vector3 halfExtents,
+			Quaternion orientation,
+			LineDelegateSimple lineDelegate)
+		{
+			DrawBoxStructure box = new DrawBoxStructure(halfExtents, orientation);
+			DrawBox(center, box, lineDelegate);
+		}
+
+		public static void DrawBox(Vector3 center, DrawBoxStructure structure, LineDelegateSimple lineDelegate)
+		{
+			Vector3
+				posUFL = structure.UFL + center,
+				posUFR = structure.UFR + center,
+				posUBL = structure.UBL + center,
+				posUBR = structure.UBR + center,
+				posDFL = structure.DFL + center,
+				posDFR = structure.DFR + center,
+				posDBL = structure.DBL + center,
+				posDBR = structure.DBR + center;
+
+			//up
+			lineDelegate(posUFL, posUFR);
+			lineDelegate(posUFR, posUBR);
+			lineDelegate(posUBR, posUBL);
+			lineDelegate(posUBL, posUFL);
+			//down
+			lineDelegate(posDFL, posDFR);
+			lineDelegate(posDFR, posDBR);
+			lineDelegate(posDBR, posDBL);
+			lineDelegate(posDBL, posDFL);
+			//down to up
+			lineDelegate(posDFL, posUFL);
+			lineDelegate(posDFR, posUFR);
+			lineDelegate(posDBR, posUBR);
+			lineDelegate(posDBL, posUBL);
 		}
 
 		#endregion
