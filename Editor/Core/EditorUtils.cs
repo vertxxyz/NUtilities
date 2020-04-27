@@ -18,9 +18,9 @@ namespace Vertx.Editor.Extensions
 	{
 		#region Assets
 
-		public static Object LoadAssetOfType(Type type)
+		public static Object LoadAssetOfType(Type type, string query = null)
 		{
-			if (!TryGetGUIDs(out var guids, type))
+			if (!TryGetGUIDs(out var guids, type, query))
 				return null;
 			foreach (string guid in guids)
 			{
@@ -32,9 +32,9 @@ namespace Vertx.Editor.Extensions
 			return null;
 		}
 
-		public static T LoadAssetOfType<T>() where T : Object
+		public static T LoadAssetOfType<T>(string query = null) where T : Object
 		{
-			if (!TryGetGUIDs(out var guids, typeof(T)))
+			if (!TryGetGUIDs(out var guids, typeof(T), query))
 				return null;
 			foreach (string guid in guids)
 			{
@@ -46,9 +46,9 @@ namespace Vertx.Editor.Extensions
 			return null;
 		}
 
-		public static T[] LoadAssetsOfType<T>() where T : Object
+		public static T[] LoadAssetsOfType<T>(string query = null) where T : Object
 		{
-			if (!TryGetGUIDs(out var guids, typeof(T)))
+			if (!TryGetGUIDs(out var guids, typeof(T), query))
 				return Array.Empty<T>();
 
 			List<T> values = new List<T>();
@@ -62,12 +62,12 @@ namespace Vertx.Editor.Extensions
 			return values.ToArray();
 		}
 
-		private static bool TryGetGUIDs(out string[] guids, Type type)
+		private static bool TryGetGUIDs(out string[] guids, Type type, string query = null)
 		{
-			guids = AssetDatabase.FindAssets($"t:{type.FullName}");
+			guids = AssetDatabase.FindAssets(query == null ? $"t:{type.FullName}" : $"t:{type.FullName} {query}");
 			if (guids.Length == 0)
 			{
-				guids = AssetDatabase.FindAssets($"t:{type.Name}");
+				guids = AssetDatabase.FindAssets(query == null ? $"t:{type.Name}" : $"t:{type.Name} {query}");
 				if (guids.Length == 0)
 					return false;
 			}
