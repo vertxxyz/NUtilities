@@ -196,7 +196,18 @@ namespace Vertx.Testing.Editor
 			Dictionary<Type, bool> tmpSearchedTypes = new Dictionary<Type, bool>();
 
 			var objects = AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic)
-				.SelectMany(a => a.GetTypes())
+				.SelectMany(a =>
+				{
+					try
+					{
+						return a.GetTypes();
+					}
+					catch (ReflectionTypeLoadException)
+					{
+						//Catching this just to avoid exceptions --- change made by vertx
+						return Array.Empty<Type>();
+					}
+				})
 				.Where(t => typeof(Component).IsAssignableFrom(t));
 
 			foreach (var obj in objects) {
