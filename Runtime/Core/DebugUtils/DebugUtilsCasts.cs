@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Core
+namespace Vertx
 {
 	public static partial class DebugUtils
 	{
