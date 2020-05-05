@@ -141,6 +141,21 @@ namespace Vertx.Editor.Extensions
 
 		#region Property Extensions
 
+		public static int GetIndexFromArrayProperty(SerializedProperty property)
+		{
+			string propertyPath = property.propertyPath;
+			int lastIndexOf = propertyPath.LastIndexOf('[');
+			if(lastIndexOf < 0)
+				throw GetException();
+			lastIndexOf++;
+			if(lastIndexOf == propertyPath.Length)
+				throw GetException();
+			if (int.TryParse(propertyPath.Substring(lastIndexOf, propertyPath.Length - lastIndexOf - 1), out var value))
+				return value;
+			throw GetException();
+			Exception GetException () => new ArgumentException($"Property with path: \"{propertyPath}\" is not an array property.");
+		}
+
 		public static void LogAllProperties(this SerializedObject serializedObject)
 		{
 			StringBuilder stringBuilder = new StringBuilder(serializedObject.targetObject.ToString());
