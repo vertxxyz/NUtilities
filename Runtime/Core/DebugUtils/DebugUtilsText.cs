@@ -82,6 +82,7 @@ namespace Vertx
 			#endif
 		}
 
+		#if UNITY_EDITOR
 		static void WaitForNextUpdate()
 		{
 			subscribedUpdate = false;
@@ -95,8 +96,7 @@ namespace Vertx
 			debugTextFixed.Clear();
 			SceneView.duringSceneGui -= SceneViewGUIFixed;
 		}
-
-		#if UNITY_EDITOR
+		
 		private static void SceneViewGUIUpdate(SceneView obj) => SceneViewGUI(obj, debugTextUpdate);
 		
 		private static void SceneViewGUIFixed(SceneView obj) => SceneViewGUI(obj, debugTextFixed);
