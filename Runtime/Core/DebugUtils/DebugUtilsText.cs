@@ -42,7 +42,8 @@ namespace Vertx
 		private static bool subscribedFixed;
 		private static readonly List<DebugText> debugTextFixed = new List<DebugText>();
 
-		private static readonly GUIStyle boxStyle = new GUIStyle(EditorStyles.boldLabel);
+		private static GUIStyle boxStyle;
+		private static GUIStyle BoxStyle => boxStyle ?? (boxStyle = new GUIStyle(EditorStyles.boldLabel));
 
 		#endif
 
@@ -89,16 +90,16 @@ namespace Vertx
 			debugTextUpdate.Clear();
 			SceneView.duringSceneGui -= SceneViewGUIUpdate;
 		}
-		
+
 		static void WaitForNextFixed()
 		{
 			subscribedFixed = false;
 			debugTextFixed.Clear();
 			SceneView.duringSceneGui -= SceneViewGUIFixed;
 		}
-		
+
 		private static void SceneViewGUIUpdate(SceneView obj) => SceneViewGUI(obj, debugTextUpdate);
-		
+
 		private static void SceneViewGUIFixed(SceneView obj) => SceneViewGUI(obj, debugTextFixed);
 
 		private static void SceneViewGUI(SceneView obj, List<DebugText> debugTexts)
@@ -134,7 +135,7 @@ namespace Vertx
 				}
 
 				var content = new GUIContent(value);
-				Rect rect = new Rect(screenPos, boxStyle.CalcSize(content));
+				Rect rect = new Rect(screenPos, BoxStyle.CalcSize(content));
 				EditorGUI.DrawRect(rect, color);
 				GUI.Label(rect, content, EditorStyles.boldLabel);
 				//-----------------

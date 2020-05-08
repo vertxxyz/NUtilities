@@ -253,21 +253,44 @@ namespace Vertx
 
 		#region RaycastHits
 
-		public static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, int maxCount = -1) =>
-			DrawSphereCastHits(hits, radius, forward, new Color(1, 0.1f, 0.2f), maxCount);
+		public static void DrawSphereCastHits(RaycastHit[] hits, Vector3 origin, float radius, Vector3 direction, int maxCount = -1) =>
+			DrawSphereCastHits(hits, origin, radius, direction, new Color(1, 0.1f, 0.2f), maxCount);
 
-		public static void DrawSphereCastHits(RaycastHit[] hits, float radius, Vector3 forward, Color color, int maxCount = -1)
+		public static void DrawSphereCastHits(RaycastHit[] hits, Vector3 origin, float radius, Vector3 direction, Color color, int maxCount = -1)
 		{
 			if (maxCount < 0)
 				maxCount = hits.Length;
+			
+			if (maxCount == 0) return;
+			
+			direction.EnsureNormalized();
 
+			Vector3 zero = Vector3.zero;
 			for (int i = 0; i < maxCount; i++)
 			{
 				RaycastHit hit = hits[i];
-				Vector3 cross = Vector3.Cross(forward, hit.normal);
-				DrawCircleFast(hit.point + hit.normal * radius, cross, hit.normal, radius, DrawLine);
+				
+				//Zero position is to be interpreted as colliding with the start of the spherecast.
+				if (hit.point == zero)
+				{
+					hit.point = origin;
+					Vector3 crossA = GetAxisAlignedPerpendicular(direction);
+					Vector3 crossB = Vector3.Cross(crossA, direction);
+					DrawCircleFast(origin, crossA, crossB, radius, DrawLineSolid);
+					DrawCircleFast(origin, crossB, crossA, radius, DrawLineSolid);
+					DrawCircleFast(origin, direction, crossA, radius, DrawLineSolid);
+					
+					void DrawLineSolid(Vector3 a, Vector3 b, float f) => Debug.DrawLine(a, b, color);
+					continue;
+				}
+				
+				Vector3 localDirection = GetAxisAlignedAlternateWhereRequired(hit.normal, direction);
+				Vector3 cross = Vector3.Cross(localDirection, hit.normal);
+
+				Vector3 point = hit.point + hit.normal * radius;
+				DrawCircleFast(point, cross, hit.normal, radius, DrawLine);
 				Vector3 secondCross = Vector3.Cross(cross, hit.normal);
-				DrawCircleFast(hit.point + hit.normal * radius, secondCross, hit.normal, radius, DrawLine);
+				DrawCircleFast(point, secondCross, hit.normal, radius, DrawLine);
 			}
 
 			void DrawLine(Vector3 a, Vector3 b, float f) => Debug.DrawLine(a, b, new Color(color.r, color.g, color.b, Mathf.Pow(1 - Mathf.Abs(f - 0.5f) * 2, 2) * color.a));

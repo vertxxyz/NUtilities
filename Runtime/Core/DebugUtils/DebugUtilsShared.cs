@@ -18,6 +18,13 @@ namespace Vertx
 				return;
 			vector3 /= Mathf.Sqrt(sqrMag);
 		}
+		
+		private static Vector3 GetAxisAlignedAlternateWhereRequired(Vector3 normal, Vector3 alternate)
+		{
+			if (Mathf.Abs(Vector3.Dot(normal, alternate)) > 0.999f)
+				alternate = GetAxisAlignedAlternate(normal);
+			return alternate;
+		}
 
 		private static Vector3 GetAxisAlignedAlternate(Vector3 normal)
 		{
