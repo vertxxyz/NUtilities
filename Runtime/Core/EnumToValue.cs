@@ -20,17 +20,33 @@ namespace Vertx
 	public class EnumToValue<T, TValue> : EnumToValueBase, IEnumerable<(T key, TValue value)>
 		where T : Enum
 	{
-		[SerializeField] protected TValue[] values = null;
+		[SerializeField] private TValue[] values = null;
 
-		public TValue GetValue(T key) => values[(int) (object) key];
-		public TValue this[T key] => values[(int) (object) key];
+		protected TValue[] Values
+		{
+			get
+			{
+				if (values == null || values.Length == 0)
+				{
+					values = new TValue[Enum.GetValues(typeof(T)).Length];
+					for (int i = 0; i < values.Length; i++)
+						values[i] = default;
+				}
+				return values;
+			}
+		}
 
-		public int Count => values?.Length ?? 0;
+		public TValue GetValue(T key) => Values[(int) (object) key];
+
+		public TValue this[T key] => Values[(int) (object) key];
+
+		public int Count => Values.Length;
 
 		private Array valuesArray = null;
 
 		public int IndexOf(TValue value)
 		{
+			TValue[] values = Values;
 			for (int i = hidesFirstEnum ? 1 : 0; i < values.Length; i++)
 			{
 				if (value.Equals(values[i]))
@@ -42,7 +58,7 @@ namespace Vertx
 
 		public IEnumerator<(T key, TValue value)> GetEnumerator()
 		{
-			if (values == null) yield break;
+			TValue[] values = Values;
 			Array array = valuesArray ?? Enum.GetValues(typeof(T));
 			for (int i = hidesFirstEnum ? 1 : 0; i < values.Length; i++)
 				yield return ((T) array.GetValue(i), values[i]);
