@@ -29,10 +29,12 @@ namespace Vertx.Editor
 					var right = toolbar.Q<VisualElement>("rightItems");
 
 					(StyleSheet styleSheet, VisualTreeAsset tree) = StyleExtensions.GetStyleSheetAndUXML("PackageUpdaterInjected");
-
-					tree.CloneTree(right);
-
+					
 					var root = right.Q<VisualElement>("Package Updater Root");
+					if(root == null)
+						tree.CloneTree(right);
+
+					root = right.Q<VisualElement>("Package Updater Root");
 					root.SendToBack();
 					root.styleSheets.Add(styleSheet);
 					button = right.Q<Button>();
