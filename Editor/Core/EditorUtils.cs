@@ -109,6 +109,21 @@ namespace Vertx.Editor.Extensions
 			);
 			EditorWindow.GetWindow(Type.GetType("UnityEditor.ProjectBrowser,UnityEditor")).Repaint();
 		}
+		
+		public static string GetCurrentlyFocusedProjectFolder()
+		{
+			foreach (var obj in Selection.GetFiltered<Object>(SelectionMode.Assets))
+			{
+				var path = AssetDatabase.GetAssetPath(obj);
+				if (string.IsNullOrEmpty(path))
+					continue;
+				if (Directory.Exists(path))
+					return path;
+				if (File.Exists(path))
+					return Path.GetDirectoryName(path);
+			}
+			return "Assets";
+		}
 
 		#endregion
 
