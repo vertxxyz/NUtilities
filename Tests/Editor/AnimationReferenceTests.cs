@@ -16,19 +16,16 @@ namespace Vertx.Testing.Editor
 		public void CheckForMissingReferencesInAssets()
 			=> RunFunctionOnAssets(CheckForMissingAnimationReferences, null);
 
-		public static void CheckForMissingAnimationReferences (Object @object)
+		public static void CheckForMissingAnimationReferences (Object @object, StringBuilder stringBuilder)
 		{
 			var gameObject = (GameObject) @object;
 			if (!gameObject.TryGetComponent(out Animator animator))
 				return;
 
-			CheckForMissingAnimationReferences(animator, gameObject);
+			CheckForMissingAnimationReferences(animator, gameObject, stringBuilder);
 		}
-		
-		private static void CheckForMissingAnimationReferences(Animator animator)
-			=> CheckForMissingAnimationReferences(animator, animator.gameObject);
-			
-		private static void CheckForMissingAnimationReferences(Animator animator, GameObject root)
+
+		private static void CheckForMissingAnimationReferences(Animator animator, GameObject root, StringBuilder stringBuilder)
 		{
 			StringBuilder result = new StringBuilder("The animator on ");
 			result.Append(EditorUtils.GetPathForObject(animator));
@@ -66,7 +63,7 @@ namespace Vertx.Testing.Editor
 			}
 			
 			if(failed)
-				Assert.Fail(result.ToString());
+				stringBuilder.Append(result);
 		}
 	}
 }

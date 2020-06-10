@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Text;
+using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using Vertx.Editor.Extensions;
@@ -16,12 +17,14 @@ namespace Vertx.Testing.Editor
 		public void CheckForMissingReferencesInAssets()
 			=> RunFunctionOnAssets(CheckForMissingReferencesUnderRoot, CheckForMissingReferencesOnObject);
 
-		private static void CheckForMissingReferencesUnderRoot(Object @object) => RunOnComponentsUnderRootGameObjectIgnoringTransform((GameObject) @object, CheckForMissingReferencesOnObject);
+		private static void CheckForMissingReferencesUnderRoot(Object @object, StringBuilder stringBuilder) =>
+			RunOnComponentsUnderRootGameObjectIgnoringTransform((GameObject) @object, stringBuilder, CheckForMissingReferencesOnObject);
 
-		public static void CheckForMissingReferencesOnObject (Object @object)
+		public static void CheckForMissingReferencesOnObject (Object @object, StringBuilder stringBuilder)
 		{
 			SerializedObject serializedObject = new SerializedObject(@object);
 			SerializedProperty property = serializedObject.GetIterator();
+			
 			while (property.NextVisible(true))
 			{
 				if (property.propertyType != SerializedPropertyType.ObjectReference)
@@ -30,7 +33,7 @@ namespace Vertx.Testing.Editor
 					continue;
 				string path = EditorUtils.GetPathForObject(@object);
 
-				Assert.Fail($"{path}.{property.propertyPath}\nWas found to be missing.");	
+				stringBuilder.AppendLine($"{path}.{property.propertyPath}\nWas found to be missing.");
 			}
 		}
 	}

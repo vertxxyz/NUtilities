@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -46,11 +47,11 @@ namespace Vertx.Testing.Editor
 			HashSet<Type> componentsThatCanHaveUnityEvent = new HashSet<Type>();
 			RefreshTypesThatCanHoldUnityEvents(componentsThatCanHaveUnityEvent);
 			
-			RunFunctionOnSceneRootGameObjects(g => CheckForUnassignedUnityEvents(g.transform, componentsThatCanHaveUnityEvent));
+			RunFunctionOnSceneRootGameObjects((g, sb) => CheckForUnassignedUnityEvents(g.transform, componentsThatCanHaveUnityEvent, sb));
 		}
 
 
-		public static void CheckForUnassignedUnityEvents (Transform root, HashSet<Type> componentsThatCanHaveUnityEvent)
+		public static void CheckForUnassignedUnityEvents(Transform root, HashSet<Type> componentsThatCanHaveUnityEvent, StringBuilder sb)
 		{
 			HashSet<EventCall> calls = new HashSet<EventCall>();
 			foreach (var type in componentsThatCanHaveUnityEvent) {
@@ -64,8 +65,10 @@ namespace Vertx.Testing.Editor
 			foreach (EventCall call in calls)
 			{
 //				Debug.Log($"{call.sender} : {call.receiver} : {call.eventFullName}");
-				Assert.NotNull(call.Receiver, $"Unity Event on \"{LogObjectWithPath(call.Sender)}\" has a null receiver. {call.EventFullName}");
-				Assert.False(string.IsNullOrEmpty(call.Method), $"Unity Event on \"{LogObjectWithPath(call.Sender)}\" with receiver \"{call.Receiver}\" targets a null method. {call.EventFullName}");
+				if (call.Receiver == null)
+					sb.AppendLine($"Unity Event on \"{LogObjectWithPath(call.Sender)}\" has a null receiver. {call.EventFullName}");
+				else if (string.IsNullOrEmpty(call.Method))
+					sb.AppendLine($"Unity Event on \"{LogObjectWithPath(call.Sender)}\" with receiver \"{call.Receiver}\" targets a null method. {call.EventFullName}");
 			}
 			
 			string LogObjectWithPath (Object @object)
@@ -263,13 +266,14 @@ namespace Vertx.Testing.Editor
 		public void CheckForMissingScriptsInBuildScenes()
 			=> RunFunctionOnSceneRootGameObjects(CheckForMissingScriptReferencesFromRoot);
 
-		private void CheckForMissingScriptReferencesFromRoot(GameObject root)
+		private void CheckForMissingScriptReferencesFromRoot(GameObject root, StringBuilder stringBuilder)
 		{
 			RecursivelyFindMissingComponents(root.transform);
 
 			void RecursivelyFindMissingComponents(Transform transform)
 			{
-				Assert.Zero(GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject), $"{EditorUtils.GetPathForObject(transform.gameObject)} has a missing script Component.");
+				if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject) != 0)
+					stringBuilder.AppendLine($"{EditorUtils.GetPathForObject(transform.gameObject)} has a missing script Component.");
 				foreach (Transform child in transform)
 					RecursivelyFindMissingComponents(child);
 			}

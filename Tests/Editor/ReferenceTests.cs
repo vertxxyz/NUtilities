@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -28,7 +29,7 @@ namespace Vertx.Testing.Editor
 		/// Runs a function on all components, ignoring the Transform.
 		/// </summary>
 		/// <param name="componentAction">Action to run on a component</param>
-		protected static void RunFunctionOnSceneObjects(Action<Component> componentAction)
+		protected static void RunFunctionOnSceneObjects(Action<Component, StringBuilder> componentAction)
 			=> RunFunctionOnSceneObjects(RunOnComponentsUnderRootGameObjectIgnoringTransform, componentAction);
 		
 		/// <summary>
@@ -36,11 +37,13 @@ namespace Vertx.Testing.Editor
 		/// </summary>
 		/// <param name="componentAction">Action to run on a component</param>
 		/// <typeparam name="T">The type of component associated with the action</typeparam>
-		protected static void RunFunctionOnSceneObjects<T>(Action<T> componentAction) where T : Component
+		protected static void RunFunctionOnSceneObjects<T>(Action<T, StringBuilder> componentAction) where T : Component
 			=> RunFunctionOnSceneObjects(RunOnComponentsUnderRootGameObject, componentAction);
 
-		private static void RunFunctionOnSceneObjects<T>(Action<GameObject, Action<T>> rootAction, Action<T> componentAction) where T : Component
+		private static void RunFunctionOnSceneObjects<T>(Action<GameObject, StringBuilder, Action<T, StringBuilder>> rootAction, Action<T, StringBuilder> componentAction) where T : Component
 		{
+			StringBuilder stringBuilder = new StringBuilder();
+			
 			int buildSceneCount = SceneManager.sceneCountInBuildSettings;
 			for (int buildIndex = 0; buildIndex < buildSceneCount; buildIndex++)
 			{
@@ -57,13 +60,18 @@ namespace Vertx.Testing.Editor
 				{
 					EditorUtility.DisplayProgressBar(checkingLabel, path, i / progressTotal);
 					GameObject rootGameObject = rootGameObjects[i];
-					rootAction(rootGameObject, componentAction);
+					rootAction(rootGameObject, stringBuilder, componentAction);
 				}
 			}
+			
+			if(stringBuilder.Length != 0)
+				Assert.Fail(stringBuilder.ToString());
 		}
 		
-		protected static void RunFunctionOnSceneRootGameObjects(Action<GameObject> rootAction)
+		protected static void RunFunctionOnSceneRootGameObjects(Action<GameObject, StringBuilder> rootAction)
 		{
+			StringBuilder stringBuilder = new StringBuilder();
+			
 			int buildSceneCount = SceneManager.sceneCountInBuildSettings;
 			for (int buildIndex = 0; buildIndex < buildSceneCount; buildIndex++)
 			{
@@ -80,12 +88,15 @@ namespace Vertx.Testing.Editor
 				{
 					EditorUtility.DisplayProgressBar(checkingLabel, path, i / progressTotal);
 					GameObject rootGameObject = rootGameObjects[i];
-					rootAction(rootGameObject);
+					rootAction(rootGameObject, stringBuilder);
 				}
 			}
+			
+			if(stringBuilder.Length != 0)
+				Assert.Fail(stringBuilder.ToString());
 		}
 		
-		protected static void RunOnComponentsUnderRootGameObjectIgnoringTransform(GameObject gameObject, Action<Component> componentAction)
+		protected static void RunOnComponentsUnderRootGameObjectIgnoringTransform(GameObject gameObject, StringBuilder stringBuilder, Action<Component, StringBuilder> componentAction)
 		{
 			Component[] components = gameObject.GetComponentsInChildren<Component>(true);
 			foreach (Component component in components)
@@ -97,19 +108,21 @@ namespace Vertx.Testing.Editor
 				if(component.GetType() == transformType)
 					continue;
 
-				componentAction(component);
+				componentAction(component, stringBuilder);
 			}
 		}
 		
-		protected static void RunOnComponentsUnderRootGameObject<T>(GameObject gameObject, Action<T> componentAction) where T : Component
+		protected static void RunOnComponentsUnderRootGameObject<T>(GameObject gameObject, StringBuilder stringBuilder, Action<T, StringBuilder> componentAction) where T : Component
 		{
 			T[] components = gameObject.GetComponentsInChildren<T>(true);
 			foreach (T component in components)
-				componentAction(component);
+				componentAction(component, stringBuilder);
 		}
 
-		protected static void RunFunctionOnAssets(Action<GameObject> prefabAction, Action<ScriptableObject> scriptableObjectAction)
+		protected static void RunFunctionOnAssets(Action<GameObject, StringBuilder> prefabAction, Action<ScriptableObject, StringBuilder> scriptableObjectAction)
 		{
+			StringBuilder stringBuilder = new StringBuilder();
+			
 			float progressTotal;
 			if (prefabAction != null)
 			{
@@ -123,7 +136,7 @@ namespace Vertx.Testing.Editor
 					if (!IsValidPath(path)) continue;
 					EditorUtility.DisplayProgressBar("Checking Prefab Assets for missing references.", path, i / progressTotal);
 					GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-					prefabAction(prefab);
+					prefabAction(prefab, stringBuilder);
 				}
 			}
 
@@ -141,7 +154,7 @@ namespace Vertx.Testing.Editor
 					EditorUtility.DisplayProgressBar("Checking ScriptableObject Assets for missing references.", path, i / progressTotal);
 					ScriptableObject scriptableObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
 					if (scriptableObject == null) continue; //This can occur if an asset has been created but the type is not compiled for the version.
-					scriptableObjectAction(scriptableObject);
+					scriptableObjectAction(scriptableObject, stringBuilder);
 				}
 			}
 
@@ -162,6 +175,9 @@ namespace Vertx.Testing.Editor
 				#endif
 				return true;
 			}
+			
+			if(stringBuilder.Length != 0)
+				Assert.Fail(stringBuilder.ToString());
 		}
 	}
 }
