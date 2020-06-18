@@ -23,7 +23,11 @@ namespace Vertx
 
 			return instancePoolScene;
 			
-			Scene GetNewScene () => SceneManager.CreateScene(instancePoolSceneName, new CreateSceneParameters(LocalPhysicsMode.None));
+			Scene GetNewScene ()
+            {
+                instancePoolScene = SceneManager.GetSceneByName(instancePoolSceneName);
+                return instancePoolScene.IsValid() ? instancePoolScene : SceneManager.CreateScene(instancePoolSceneName, new CreateSceneParameters(LocalPhysicsMode.None));
+            }
 		}
 	}
 	

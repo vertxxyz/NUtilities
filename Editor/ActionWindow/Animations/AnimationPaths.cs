@@ -5,7 +5,7 @@ using Vertx.Editor.Extensions;
 
 namespace Vertx.Editor.Animations
 {
-	public class AnimationPaths
+	public partial class AnimationPaths
 	{
 		private const string repairAnimationPaths = "Animation - Repair Animation Paths in Animation.";
 		
